@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
+<title>Naming Studio — live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0..1,300..500&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--fd:"Fraunces",Georgia,serif;--fu:"Inter",system-ui,sans-serif;--fm:"Space Mono",monospace;
+  --ink:#F4F1EA;--soft:#8c887e;--dim:#56524a;--line:#ffffff1c;--accent:#E8A24C;--ease:cubic-bezier(.22,.61,.36,1)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#070708;overscroll-behavior:none}
+body{font-family:var(--fu);color:var(--ink);-webkit-font-smoothing:antialiased;touch-action:manipulation}
+canvas{position:fixed;inset:0;z-index:0}
+.vig{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(135% 130% at 50% 42%,transparent 30%,#04040699 80%,#040406 100%)}
+.bar{position:fixed;top:0;left:0;right:0;z-index:8;display:flex;justify-content:space-between;align-items:center;padding:env(safe-area-inset-top,16px) 22px 0;height:60px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:13.5px;text-shadow:0 1px 18px #000a}
+.brand .mk{width:17px;height:17px;border:1.5px solid var(--ink);border-radius:50%;position:relative}
+.brand .mk::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--accent)}
+.brand small{color:var(--soft);font-weight:400}
+.tools{display:flex;gap:8px}
+.tbtn{font-family:var(--fm);font-size:10.5px;color:var(--soft);background:#ffffff08;border:1px solid var(--line);border-radius:999px;padding:7px 12px;cursor:pointer}
+.tbtn:hover{color:var(--ink)}
+.listening{position:fixed;top:env(safe-area-inset-top,16px);left:50%;transform:translateX(-50%);z-index:8;height:60px;display:flex;align-items:center;gap:8px;font-family:var(--fm);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);opacity:0;transition:.3s}
+.listening.on{opacity:.85}
+.listening .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pl 1.1s infinite}
+@keyframes pl{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* key gate */
+.gate{position:fixed;inset:0;z-index:20;background:#070708ee;backdrop-filter:blur(10px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center}
+.gate.hide{display:none}
+.gate .kick{font-family:var(--fm);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:18px}
+.gate h1{font-family:var(--fd);font-weight:330;font-size:clamp(28px,5vw,42px);letter-spacing:-.02em;margin-bottom:14px}
+.gate h1 em{font-style:italic}
+.gate p{color:var(--soft);font-size:14.5px;line-height:1.6;max-width:46ch;margin-bottom:26px}
+.gate .field{width:min(520px,92vw);display:flex;gap:8px;background:#0c0c0e;border:1px solid var(--line);border-radius:14px;padding:6px 6px 6px 16px}
+.gate input{flex:1;background:transparent;border:0;outline:0;color:var(--ink);font-family:var(--fm);font-size:14px;padding:11px 0}
+.gate input::placeholder{color:#ffffff34}
+.gate .save{font-weight:600;font-size:13px;padding:11px 18px;border-radius:10px;border:0;cursor:pointer;background:var(--ink);color:#0a0a0a}
+.gate .fine{margin-top:18px;font-size:12px;color:var(--dim);max-width:48ch;line-height:1.5}.gate .fine a{color:var(--soft)}
+.gate .err{color:#FF6B5E;font-size:13px;margin-top:14px;min-height:1em}
+
+/* opening prompt */
+.lead{position:fixed;z-index:3;left:50%;top:24%;transform:translateX(-50%);text-align:center;width:92%;pointer-events:none;transition:.5s var(--ease)}
+.lead.hide{opacity:0;transform:translateX(-50%) translateY(-10px)}
+.lead h1{font-family:var(--fd);font-weight:330;font-size:clamp(26px,5vw,42px);letter-spacing:-.02em}
+.lead h1 em{font-style:italic}
+.lead p{color:var(--soft);font-size:14px;margin-top:9px}
+
+/* reflection (the strategist speaking back) */
+.reflect{position:fixed;z-index:5;left:50%;top:15%;transform:translateX(-50%);width:min(620px,90vw);text-align:center;
+  font-family:var(--fd);font-style:italic;font-weight:330;font-size:clamp(17px,2.7vw,22px);line-height:1.45;color:var(--ink);
+  text-shadow:0 1px 30px #000;opacity:0;transition:.6s var(--ease);pointer-events:none}
+.reflect.on{opacity:.95}
+
+/* the follow-up the system raises */
+.prompt{position:fixed;z-index:6;left:50%;bottom:calc(118px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  width:min(620px,90vw);text-align:center;opacity:0;transition:.5s var(--ease);pointer-events:none}
+.prompt.on{opacity:1}
+.prompt .q{display:inline-block;font-family:var(--fu);font-size:14.5px;line-height:1.5;color:var(--ink);background:#0c0c0ecc;backdrop-filter:blur(12px);
+  border:1px solid var(--accent);border-radius:16px;padding:13px 18px;box-shadow:0 16px 50px -24px #000;max-width:100%}
+.prompt .q b{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:5px}
+
+/* island */
+.island{position:fixed;z-index:7;left:50%;bottom:calc(34px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(680px,92vw);
+  background:#0b0b0dd9;backdrop-filter:blur(20px);border:1px solid var(--line);border-radius:24px;padding:8px 8px 8px 18px;display:flex;align-items:flex-end;gap:10px;box-shadow:0 24px 70px -30px #000e;transition:.3s}
+.island.hide{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(20px)}
+.island:focus-within{border-color:#ffffff44}
+#say{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--ink);font-family:var(--fu);font-size:15.5px;line-height:1.5;padding:11px 0;resize:none;max-height:120px}
+#say::placeholder{color:#ffffff34}
+.go{font-family:var(--fu);font-weight:600;font-size:14px;padding:13px 20px;border-radius:999px;border:0;cursor:pointer;background:var(--ink);color:#0a0a0a;white-space:nowrap;transition:.2s var(--ease)}
+.go:hover{transform:translateY(-1px)}.go[disabled]{opacity:.32;cursor:not-allowed;transform:none}
+.exline{position:fixed;z-index:7;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);font-size:11px;color:var(--soft)}
+.exline button{background:none;border:0;color:var(--ink);cursor:pointer;text-decoration:underline;text-underline-offset:3px;font:inherit}
+.exline.hide{display:none}
+
+/* loading + results (naming) */
+.load{position:fixed;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;opacity:0;pointer-events:none;transition:.4s;background:#070708cc}
+.load.on{opacity:1}
+.load .t{font-family:var(--fd);font-style:italic;font-size:22px;text-shadow:0 1px 30px #000;text-align:center;padding:0 24px}
+.load .dots{display:flex;gap:7px}.load .dots i{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:bl 1.2s infinite}
+.load .dots i:nth-child(2){animation-delay:.2s}.load .dots i:nth-child(3){animation-delay:.4s}
+@keyframes bl{0%,100%{opacity:.25}50%{opacity:1}}
+.results{position:fixed;inset:0;z-index:9;overflow-y:auto;padding:78px 22px 60px;opacity:0;pointer-events:none;transition:opacity .6s var(--ease);background:#070708}
+.results.on{opacity:1;pointer-events:auto}
+.rwrap{max-width:840px;margin:0 auto}
+.readback{font-family:var(--fd);font-weight:330;font-size:clamp(20px,3.4vw,28px);line-height:1.4;margin-bottom:8px}
+.routing{color:var(--soft);font-size:13.5px;line-height:1.6;max-width:62ch;margin-bottom:34px;padding-bottom:22px;border-bottom:1px solid var(--line)}
+.lensblock{margin-bottom:38px}
+.lenshead .n{font-family:var(--fm);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.lenswhy{color:var(--soft);font-size:13px;line-height:1.55;margin:4px 0 16px;max-width:60ch}
+.namegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.ncard{cursor:pointer;border:1px solid var(--line);border-radius:16px;padding:18px;background:linear-gradient(180deg,#ffffff0a,#ffffff03);transition:.22s var(--ease)}
+.ncard:hover{transform:translateY(-2px);border-color:#ffffff3a}
+.ncard .nm{font-family:var(--fd);font-weight:380;font-size:28px;color:var(--ink)}
+.ncard .mech{color:var(--soft);font-size:13px;line-height:1.5;margin-top:7px}
+.ncard .sc{font-family:var(--fm);font-size:11px;color:var(--dim);margin-top:11px;display:flex;justify-content:space-between}
+.ncard .sc b{color:var(--accent);font-weight:700}
+.again{display:block;margin:18px auto 0;font-weight:600;font-size:14px;padding:13px 26px;border-radius:999px;border:1px solid var(--line);background:#ffffff08;color:var(--ink);cursor:pointer}
+
+/* card */
+.scrim{position:fixed;inset:0;z-index:10;background:#000000b0;backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:.35s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;z-index:11;right:26px;top:50%;width:390px;max-height:86vh;overflow:auto;transform:translateY(-50%) translateX(30px);opacity:0;pointer-events:none;background:#0e0e10f5;backdrop-filter:blur(26px);border:1px solid var(--line);border-radius:22px;padding:26px;box-shadow:0 40px 100px -30px #000;transition:.42s var(--ease)}
+.sheet.on{transform:translateY(-50%);opacity:1;pointer-events:auto}.sheet::-webkit-scrollbar{width:0}
+.sheet .lns{display:inline-flex;gap:7px;font-family:var(--fm);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:5px 11px;margin-bottom:16px;background:#e8a24c12}
+.sheet h2{font-family:var(--fd);font-weight:380;font-size:42px;letter-spacing:-.02em;line-height:1;margin-bottom:10px}
+.mech2{font-family:var(--fd);font-style:italic;font-size:16px;line-height:1.5;color:var(--accent);margin-bottom:18px}
+.story2{font-size:14px;line-height:1.6;margin-bottom:18px}
+.layers .ly{display:flex;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-size:13px;line-height:1.5}
+.layers .ly:first-child{border-top:0}.layers .ly .n{font-family:var(--fm);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft);flex:none;width:58px;padding-top:1px}
+.scoreh{display:flex;align-items:baseline;justify-content:space-between;border-top:1px solid var(--line);padding-top:16px;margin-top:6px}
+.scoreh .n{font-family:var(--fm);font-size:28px;font-weight:700}.scoreh .n small{font-size:13px;color:var(--soft)}
+.risk2{margin-top:14px;font-size:13px;line-height:1.55;color:var(--soft)}.risk2 b{color:var(--ink);font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:4px}
+.sheet .x{position:absolute;top:18px;right:18px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:#ffffff08;color:var(--ink);cursor:pointer}
+
+@media(max-width:760px){
+  .reflect{top:11%}.prompt{bottom:calc(110px + env(safe-area-inset-bottom,0px))}
+  .results{padding:70px 16px 50px}.namegrid{grid-template-columns:1fr 1fr;gap:10px}.ncard .nm{font-size:24px}
+  .sheet{right:0;left:0;top:auto;bottom:0;width:100%;max-height:84vh;border-radius:24px 24px 0 0;transform:translateY(100%);padding:22px 20px calc(26px + env(safe-area-inset-bottom,0px))}
+  .sheet.on{transform:translateY(0)}.sheet h2{font-size:36px}.island{width:94vw}.exline{display:none}
+}
+</style>
+</head>
+<body>
+<canvas id="field"></canvas>
+<div class="vig"></div>
+<div class="bar">
+  <div class="brand"><span class="mk"></span> Naming Studio <small>· live</small></div>
+  <div class="tools"><button class="tbtn" id="keyBtn">key</button></div>
+</div>
+<div class="listening" id="listening"><span class="pulse"></span> listening</div>
+
+<div class="gate" id="gate">
+  <div class="kick">Connect your engine</div>
+  <h1>Let's find your name — <em>together.</em></h1>
+  <p>Paste your Anthropic API key. Stored only in this browser, sent only to Anthropic — never to me, never to a server.</p>
+  <div class="field"><input id="keyInput" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false" /><button class="save" id="keySave">Connect →</button></div>
+  <div class="err" id="keyErr"></div>
+  <div class="fine">No key? Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>. Listening is cheap; naming costs a few cents.</div>
+</div>
+
+<div class="lead" id="lead"><h1>So — what are you <em>making?</em></h1><p>Just talk. I'm listening for what matters.</p></div>
+<div class="reflect" id="reflect"></div>
+<div class="prompt" id="prompt"><span class="q" id="promptq"></span></div>
+
+<div class="island" id="island"><textarea id="say" rows="1" placeholder="tell me about it…"></textarea><button class="go" id="go" disabled>Name it →</button></div>
+<div class="exline" id="exline"><button id="ex">try an example</button></div>
+
+<div class="load" id="load"><div class="t" id="loadt">naming…</div><div class="dots"><i></i><i></i><i></i></div></div>
+<div class="results" id="results"><div class="rwrap" id="rwrap"></div></div>
+<div class="scrim" id="scrim"></div>
+<aside class="sheet" id="sheet"></aside>
+
+<script>
+/* ===== key ===== */
+const LS_KEY='ne_key';let apiKey=localStorage.getItem(LS_KEY)||'';
+const gate=document.getElementById('gate');
+function openGate(){gate.classList.remove('hide');document.getElementById('keyInput').value=apiKey;}
+function closeGate(){gate.classList.add('hide');}
+apiKey?closeGate():openGate();
+document.getElementById('keySave').onclick=()=>{const v=document.getElementById('keyInput').value.trim();
+  if(!v.startsWith('sk-ant-')){document.getElementById('keyErr').textContent='That doesn’t look like an Anthropic key (sk-ant-…).';return;}
+  apiKey=v;localStorage.setItem(LS_KEY,v);document.getElementById('keyErr').textContent='';closeGate();document.getElementById('say').focus();};
+document.getElementById('keyBtn').onclick=openGate;
+
+/* ===== facet web (canvas) ===== */
+const cv=document.getElementById('field'),ctx=cv.getContext('2d');let W,H,DPR;
+function rz(){DPR=Math.min(devicePixelRatio||1,2);cv.style.width=innerWidth+'px';cv.style.height=innerHeight+'px';W=cv.width=innerWidth*DPR;H=cv.height=innerHeight*DPR;}
+addEventListener('resize',rz);rz();
+let facets=[]; // {term,weight,x,y,tx,ty,dr,i}
+let links=[];  // [aTerm,bTerm]
+function setMap(newFacets,newLinks){
+  const cx=W/2,cy=H*0.40,N=Math.max(newFacets.length,1);
+  const rx=Math.min(W*0.40,440*DPR), ry=Math.min(H*0.19,360*DPR);
+  const keep={};facets.forEach(f=>keep[f.term.toLowerCase()]=f);
+  facets=newFacets.slice(0,10).map((nf,idx)=>{
+    const ang=(idx/N)*Math.PI*2 - Math.PI/2;
+    const tx=cx+Math.cos(ang)*rx, ty=cy+Math.sin(ang)*ry;
+    const k=nf.term.toLowerCase(), e=keep[k];
+    if(e){e.tx=tx;e.ty=ty;e.weight=nf.weight||e.weight;return e;}
+    return {term:nf.term,weight:nf.weight||2,x:cx,y:cy,tx,ty,dr:Math.random()*6.28,i:0};});
+  links=(newLinks||[]).filter(l=>l&&l.length===2);
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  for(const f of facets){f.i+=(1-f.i)*0.05;f.dr+=0.008;
+    f.x+=(f.tx-f.x)*0.06+Math.cos(f.dr)*0.16*DPR;
+    f.y+=(f.ty-f.y)*0.06+Math.sin(f.dr*0.9)*0.16*DPR;}
+  const fmap={};facets.forEach(f=>fmap[f.term.toLowerCase()]=f);
+  ctx.lineWidth=1*DPR;
+  for(const[ta,tb]of links){const a=fmap[(ta||'').toLowerCase()],b=fmap[(tb||'').toLowerCase()];if(!a||!b)continue;
+    ctx.strokeStyle=`rgba(232,162,76,${0.26*Math.min(a.i,b.i)})`;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  for(const f of facets){const sz=(13+f.weight*4)*DPR;
+    ctx.fillStyle=`rgba(232,162,76,${0.85*f.i})`;ctx.beginPath();ctx.arc(f.x,f.y-sz*0.95,2.4*DPR,0,6.28);ctx.fill();
+    ctx.font=`400 ${sz}px "Fraunces",serif`;ctx.fillStyle=`rgba(244,241,234,${0.5+f.i*0.45})`;ctx.fillText(f.term,f.x,f.y);}
+  requestAnimationFrame(draw);
+}
+draw();
+
+/* ===== live listening (Haiku extracts facets + reflection + follow-up) ===== */
+const MAP_TOOL={name:'map_idea',description:'Map what the founder is saying.',input_schema:{type:'object',properties:{
+  facets:{type:'array',description:'The 4–10 most important concepts/feelings/tensions in what they said (no filler words).',items:{type:'object',properties:{term:{type:'string'},weight:{type:'integer',description:'1–3, how central.'}},required:['term','weight']}},
+  connections:{type:'array',description:'Pairs of facet terms that relate, for drawing links.',items:{type:'array',items:{type:'string'}}},
+  reflection:{type:'string',description:'One warm, perceptive sentence reflecting what they are REALLY getting at (second person, "you...").'},
+  next_prompt:{type:'string',description:'ONE thing to deepen it: a sharp follow-up question, OR an evocative idea/association they had not considered. Short.'}
+},required:['facets','connections','reflection','next_prompt']}};
+const MAP_SYS=`You are a naming strategist sitting across from a founder as they describe what they're building. You are a perceptive LISTENER, not a form. As they talk, pull out the concepts, feelings, and tensions that actually matter (ignore filler), note which relate, reflect back what they're truly getting at in one warm second-person sentence, and offer ONE thing that deepens it — a sharp question or an idea they hadn't considered. Be specific to THEM. Return only via the map_idea tool.`;
+
+const say=document.getElementById('say'),go=document.getElementById('go'),lead=document.getElementById('lead');
+let mapSeq=0,lastLen=0,deb;
+function onSay(){
+  say.style.height='auto';say.style.height=Math.min(say.scrollHeight,120)+'px';
+  const t=say.value.trim();go.disabled=facets.length<3;if(t)lead.classList.add('hide');
+  clearTimeout(deb);
+  if(t.length>14 && t.length-lastLen>=10){ deb=setTimeout(()=>listen(t),900); }
+}
+say.oninput=onSay;
+say.onkeydown=e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();name_it();}};
+document.getElementById('ex').onclick=()=>{say.value="a non-alcoholic aperitif for people who quit drinking but miss the ritual of a proper drink in the evening — it's about still feeling like you belong at the bar, premium and a little ceremonial";onSay();listen(say.value);say.focus();};
+
+async function listen(text){
+  if(!apiKey)return;lastLen=text.length;const seq=++mapSeq;
+  document.getElementById('listening').classList.add('on');
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{
+      'content-type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1024,system:MAP_SYS,tools:[MAP_TOOL],tool_choice:{type:'tool',name:'map_idea'},
+        messages:[{role:'user',content:text}]})});
+    if(!res.ok)throw new Error('map '+res.status);
+    const data=await res.json();if(seq!==mapSeq)return; // stale
+    const tu=data.content.find(c=>c.type==='tool_use');if(!tu)return;
+    const m=tu.input;setMap(m.facets||[],m.connections||[]);
+    const rf=document.getElementById('reflect');if(m.reflection){rf.textContent=m.reflection;rf.classList.add('on');}
+    const pq=document.getElementById('promptq');if(m.next_prompt){pq.innerHTML='<b>worth asking</b>'+esc(m.next_prompt);document.getElementById('prompt').classList.add('on');}
+    go.disabled=facets.length<3;
+  }catch(e){/* silent — listening is best-effort */}
+  finally{if(seq===mapSeq)document.getElementById('listening').classList.remove('on');}
+}
+
+/* ===== naming (Opus, the engine) ===== */
+const NAME_SYS=`You are a master brand-naming strategist (Lexicon / Eat My Words / "How to Name Anything"). Metaphor-driven, never thesaurus-driven. You name through MANY LENSES; CHOOSE THE 4–6 THAT FIT THIS IDEA (not all), and give real candidates per lens with honest reasoning.
+LENSES: Hidden Construction (a category word hides in the name — Ace & Tate → "acetate"); Metaphor/Facet (a concrete object that IS the function — Stripe); Mythology/History (a myth/figure mapping the ambition — Nike; Bluetooth united Denmark); Linguistic Borrowing (a perfect word from another language — Tenue de Nîmes); Identity/Place (founder/geography — Cisco ← San Francisco); Contradiction (Liquid Death); Invented (coined from real morphemes — Figma ← figure); Evocative (familiar word, new context — Apple).
+RULES: avoid AI slop (no -ly/-ify/-able suffixes, no Category+Modifier like CloudSync, no thesaurus words like Apex/Zenith, no vacant corporate words). Phone test + a real 15-sec story each. Score /100 for THIS brand and name the real weakness. Match the stated feeling/tone. Return ONLY via present_names; 2–3 per lens.`;
+const NAME_TOOL={name:'present_names',description:'Names by lens.',input_schema:{type:'object',properties:{
+  read_back:{type:'string'},routing_rationale:{type:'string'},
+  lenses:{type:'array',items:{type:'object',properties:{lens:{type:'string'},why_this_lens:{type:'string'},
+    candidates:{type:'array',items:{type:'object',properties:{name:{type:'string'},mechanism:{type:'string'},story:{type:'string'},sound:{type:'string'},surface:{type:'string'},hidden:{type:'string'},score:{type:'integer'},risk:{type:'string'}},required:['name','mechanism','story','score','risk']}}},required:['lens','why_this_lens','candidates']}}
+},required:['read_back','routing_rationale','lenses']}};
+const LOADM=['gathering everything you said…','choosing the lenses that fit…','mining for hidden words…','checking the myths…','scoring honestly…'];
+let loadIv;
+go.onclick=name_it;
+async function name_it(){
+  if(!apiKey){openGate();return;}
+  const text=say.value.trim();if(facets.length<3&&text.length<14)return;
+  const facetLine=facets.length?('\n\nKey facets I heard: '+facets.map(f=>f.term).join(', ')+'.'):'';
+  document.getElementById('island').classList.add('hide');document.getElementById('exline').classList.add('hide');
+  document.getElementById('prompt').classList.remove('on');document.getElementById('reflect').classList.remove('on');
+  const load=document.getElementById('load');load.classList.add('on');let li=0;document.getElementById('loadt').textContent=LOADM[0];
+  loadIv=setInterval(()=>{li=(li+1)%LOADM.length;document.getElementById('loadt').textContent=LOADM[li];},2300);
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{
+      'content-type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-opus-4-8',max_tokens:16000,system:NAME_SYS,tools:[NAME_TOOL],tool_choice:{type:'tool',name:'present_names'},thinking:{type:'disabled'},
+        messages:[{role:'user',content:'Name this. Be specific, surprising, and honest.\n\n'+text+facetLine}]})});
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error((e.error&&e.error.message)||('HTTP '+res.status));}
+    const data=await res.json();const tu=data.content.find(c=>c.type==='tool_use');if(!tu)throw new Error('No structured result.');
+    renderNames(tu.input);
+  }catch(err){clearInterval(loadIv);load.classList.remove('on');
+    document.getElementById('island').classList.remove('hide');document.getElementById('exline').classList.remove('hide');
+    let m=err.message||String(err);
+    if(/401|authentication|invalid x-api-key/i.test(m))m='Your API key was rejected. Tap “key” to re-enter.';
+    else if(/429|rate/i.test(m))m='Rate limited — wait a moment.';else if(/credit|billing|quota/i.test(m))m='Your Anthropic account needs billing/credit.';
+    else if(/Failed to fetch|NetworkError/i.test(m))m='Network/blocked request.';
+    alert('Couldn’t name it:\n\n'+m);}
+}
+function renderNames(d){
+  clearInterval(loadIv);document.getElementById('load').classList.remove('on');
+  let html=`<div class="readback">${esc(d.read_back||'')}</div><div class="routing">${esc(d.routing_rationale||'')}</div>`;
+  (d.lenses||[]).forEach((L,li)=>{html+=`<div class="lensblock"><div class="lenshead"><span class="n">${esc(L.lens)}</span></div><div class="lenswhy">${esc(L.why_this_lens||'')}</div><div class="namegrid">`;
+    (L.candidates||[]).forEach((c,ci)=>{html+=`<div class="ncard" data-l="${li}" data-c="${ci}"><div class="nm">${esc(c.name)}</div><div class="mech">${esc(c.mechanism||'')}</div><div class="sc"><span>${esc(L.lens.split(/[ ·\/]/)[0])}</span><b>${c.score||'—'}/100</b></div></div>`;});
+    html+=`</div></div>`;});
+  html+=`<button class="again" id="again">← back to listening</button>`;
+  const wrap=document.getElementById('rwrap');wrap.innerHTML=html;wrap.parentElement.scrollTop=0;
+  document.getElementById('results').classList.add('on');
+  wrap.querySelectorAll('.ncard').forEach(el=>el.onclick=()=>openCard(d.lenses[+el.dataset.l],d.lenses[+el.dataset.l].candidates[+el.dataset.c]));
+  document.getElementById('again').onclick=()=>{document.getElementById('results').classList.remove('on');document.getElementById('island').classList.remove('hide');document.getElementById('exline').classList.remove('hide');};
+}
+function openCard(L,c){const tier=c.score>=85?'Exceptional':c.score>=70?'Strong':c.score>=55?'Workable':'Risky';
+  const layers=[['Sound',c.sound],['Surface',c.surface],['Hidden',c.hidden]].filter(x=>x[1]);
+  document.getElementById('sheet').innerHTML=`<button class="x" id="sx">✕</button><span class="lns">${esc(L.lens)}</span><h2>${esc(c.name)}</h2><div class="mech2">${esc(c.mechanism||'')}</div><div class="story2">${esc(c.story||'')}</div><div class="layers">${layers.map(l=>`<div class="ly"><span class="n">${l[0]}</span><span>${esc(l[1])}</span></div>`).join('')}</div><div class="scoreh"><div class="n">${c.score||'—'}<small>/100</small></div><div class="t" style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft)">${tier} · this lens</div></div>${c.risk?`<div class="risk2"><b>The risk</b>${esc(c.risk)}</div>`:''}`;
+  document.getElementById('sheet').classList.add('on');document.getElementById('scrim').classList.add('on');document.getElementById('sx').onclick=closeCard;}
+function closeCard(){document.getElementById('sheet').classList.remove('on');document.getElementById('scrim').classList.remove('on');}
+document.getElementById('scrim').onclick=closeCard;
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+</script>
+</body>
+</html>
