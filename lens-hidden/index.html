@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
+<title>Hidden Construction — Naming Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0..1,300..500&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--fd:"Fraunces",Georgia,serif;--fu:"Inter",system-ui,sans-serif;--fm:"Space Mono",monospace;
+  --ink:#F4F1EA;--soft:#8c887e;--dim:#56524a;--line:#ffffff1c;--accent:#E8A24C;--ease:cubic-bezier(.22,.61,.36,1)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#070708;overscroll-behavior:none}
+body{font-family:var(--fu);color:var(--ink);-webkit-font-smoothing:antialiased;touch-action:manipulation}
+canvas{position:fixed;inset:0;z-index:0}
+.vig{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(130% 120% at 50% 44%,transparent 32%,#04040699 80%,#040406 100%)}
+.bar{position:fixed;top:0;left:0;right:0;z-index:8;display:flex;justify-content:space-between;align-items:center;padding:env(safe-area-inset-top,18px) 24px 0;height:62px;pointer-events:none}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:13.5px;text-shadow:0 1px 18px #000a}
+.brand .mk{width:17px;height:17px;border:1.5px solid var(--ink);border-radius:50%;position:relative}
+.brand .mk::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--accent)}
+.brand small{color:var(--soft);font-weight:400}
+.lensbadge{font-family:var(--fm);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);
+  border:1px solid var(--accent);border-radius:999px;padding:6px 12px;background:#e8a24c12;text-shadow:none}
+
+/* scene system */
+.stage{position:fixed;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:84px 26px 130px;text-align:center}
+.scene{position:absolute;max-width:760px;width:100%;padding:0 26px;opacity:0;transform:translateY(18px);
+  pointer-events:none;transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.scene.on{opacity:1;transform:none;pointer-events:auto}
+.kick{font-family:var(--fm);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-bottom:20px}
+.kick b{color:var(--accent)}
+h1{font-family:var(--fd);font-weight:330;font-size:clamp(30px,5.4vw,52px);line-height:1.08;letter-spacing:-.02em;margin-bottom:18px}
+h1 em{font-style:italic}
+.lede{color:var(--soft);font-size:clamp(15px,2.4vw,18px);line-height:1.6;max-width:54ch;margin:0 auto}
+.lede b{color:var(--ink);font-weight:500}
+
+/* the reveal — flex of letters that collapse/split */
+.reveal{display:flex;justify-content:center;align-items:flex-end;flex-wrap:nowrap;margin:18px 0 8px;min-height:1.2em}
+.reveal .L{font-family:var(--fd);font-weight:360;font-size:clamp(40px,9vw,90px);line-height:1;letter-spacing:.01em;
+  transition:opacity .6s var(--ease),max-width .6s var(--ease),margin .6s var(--ease),color .5s,transform .6s var(--ease);
+  max-width:1.1em;overflow:hidden;display:inline-block;white-space:pre}
+.reveal .L.gone{opacity:.12;max-width:0;margin:0;transform:translateY(10px)}
+.reveal .L.lit{color:var(--accent)}
+.reveal .amp{font-family:var(--fd);font-style:italic;color:var(--accent);max-width:0;opacity:0;overflow:hidden;
+  transition:max-width .6s var(--ease),opacity .6s var(--ease);font-size:clamp(34px,7vw,72px)}
+.reveal .amp.show{max-width:1.4em;opacity:.9;margin:0 .12em}
+.note{font-family:var(--fu);font-size:14px;color:var(--soft);line-height:1.55;max-width:46ch;margin:14px auto 0;
+  opacity:0;transition:opacity .6s var(--ease) .2s}
+.note.show{opacity:1}.note b{color:var(--ink);font-weight:500}.note .hl{color:var(--accent);font-weight:500}
+
+/* canon chips */
+.canon{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:30px;opacity:0;transition:opacity .6s .5s}
+.canon.show{opacity:1}
+.cchip{border:1px solid var(--line);border-radius:12px;padding:12px 15px;font-family:var(--fm);font-size:13px;color:var(--soft);background:#ffffff06}
+.cchip b{color:var(--accent)}.cchip span{display:block;font-family:var(--fu);font-size:11px;color:var(--dim);margin-top:4px}
+
+/* domain words floating (scene apply) */
+.domain{position:fixed;inset:0;z-index:2;pointer-events:none}
+.dw{position:absolute;font-family:var(--fu);color:var(--soft);opacity:0;transition:opacity 1s var(--ease);white-space:nowrap}
+
+/* candidate field */
+.cands{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.cand{cursor:pointer;border:1px solid var(--line);border-radius:16px;padding:20px 22px;background:linear-gradient(180deg,#ffffff0a,#ffffff03);
+  transition:.25s var(--ease);min-width:150px;opacity:0;transform:translateY(14px)}
+.cand.in{opacity:1;transform:none}
+.cand:hover{transform:translateY(-3px);border-color:#ffffff3a}
+.cand .nm{font-family:var(--fd);font-weight:380;font-size:30px;color:var(--accent);letter-spacing:-.01em}
+.cand .src{font-family:var(--fm);font-size:10.5px;letter-spacing:.06em;color:var(--soft);margin-top:6px}
+.cand .src u{color:var(--accent);text-decoration:none}
+.cand .sc{font-family:var(--fm);font-size:11px;color:var(--dim);margin-top:8px}
+
+/* nav */
+.foot{position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:7;display:flex;align-items:center;gap:18px}
+.btn{font-family:var(--fu);font-weight:600;font-size:14px;padding:14px 28px;border-radius:999px;border:0;cursor:pointer;background:var(--ink);color:#0a0a0a;transition:.2s var(--ease);white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.dots{display:flex;gap:7px}.dots i{width:7px;height:7px;border-radius:50%;border:1.5px solid var(--soft);transition:.3s}
+.dots i.on{background:var(--accent);border-color:var(--accent)}
+
+/* verdict sheet */
+.scrim{position:fixed;inset:0;z-index:10;background:#000000b0;backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:.35s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;z-index:11;right:26px;top:50%;width:390px;max-height:86vh;overflow:auto;transform:translateY(-50%) translateX(30px);opacity:0;pointer-events:none;
+  background:#0e0e10f5;backdrop-filter:blur(26px);border:1px solid var(--line);border-radius:22px;padding:26px;box-shadow:0 40px 100px -30px #000;transition:.42s var(--ease)}
+.sheet.on{transform:translateY(-50%);opacity:1;pointer-events:auto}.sheet::-webkit-scrollbar{width:0}
+.sheet .lns{display:inline-flex;align-items:center;gap:7px;font-family:var(--fm);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:5px 11px;margin-bottom:16px;background:#e8a24c12}
+.sheet h2{font-family:var(--fd);font-weight:380;font-size:42px;letter-spacing:-.02em;line-height:1;margin-bottom:10px}
+.mech{font-family:var(--fd);font-style:italic;font-weight:330;font-size:17px;line-height:1.5;color:var(--accent);margin-bottom:20px}
+.layers{margin:0 0 20px}.layers .ly{display:flex;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-size:13px;line-height:1.5}
+.layers .ly:first-child{border-top:0}.layers .ly .n{font-family:var(--fm);font-size:11px;color:var(--soft);flex:none;width:54px}
+.layers .ly b{color:var(--ink);font-weight:600}
+.scoreh{display:flex;align-items:baseline;justify-content:space-between;border-top:1px solid var(--line);padding-top:16px}
+.scoreh .n{font-family:var(--fm);font-size:28px;font-weight:700}.scoreh .n small{font-size:13px;color:var(--soft)}
+.scoreh .t{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.sheet .x{position:absolute;top:18px;right:18px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:#ffffff08;color:var(--ink);cursor:pointer}
+
+@media(max-width:760px){
+  .stage{padding:74px 18px 120px}
+  .sheet{right:0;left:0;top:auto;bottom:0;width:100%;max-height:84vh;border-radius:24px 24px 0 0;transform:translateY(100%);padding:22px 20px calc(26px + env(safe-area-inset-bottom,0px))}
+  .sheet.on{transform:translateY(0)}.sheet h2{font-size:36px}
+  .cand{min-width:0;flex:1 1 42%}
+  .canon{display:none}
+}
+</style>
+</head>
+<body>
+<canvas id="dust"></canvas>
+<div class="vig"></div>
+<div class="domain" id="domain"></div>
+
+<div class="bar">
+  <div class="brand"><span class="mk"></span> Naming Engine</div>
+  <div class="lensbadge">Lens 03 · Hidden Construction</div>
+</div>
+
+<div class="stage" id="stage">
+  <!-- S0 philosophy -->
+  <section class="scene" data-s="0">
+    <div class="kick">The thinking</div>
+    <h1>A name can <em>hide a word</em><br>inside your own category.</h1>
+    <p class="lede">A meaning insiders feel and outsiders discover. It doesn't explain itself — it <b>rewards a second look</b>, and gets richer the moment you catch it.</p>
+  </section>
+
+  <!-- S1 teach (canon) -->
+  <section class="scene" data-s="1">
+    <div class="kick">You've seen it a hundred times — and never noticed</div>
+    <div class="reveal" id="rev1"></div>
+    <div class="note" id="note1"></div>
+    <div class="canon" id="canon1">
+      <div class="cchip">san fran<b>cisco</b><span>→ Cisco</span></div>
+      <div class="cchip"><b>Tenue</b> de Nîmes<span>→ Tenue · the origin of denim</span></div>
+      <div class="cchip">Drea<b>mers</b> <b>I</b>nk <b>A</b>esthetics<span>→ DIA</span></div>
+    </div>
+  </section>
+
+  <!-- S2 apply -->
+  <section class="scene" data-s="2">
+    <div class="kick">Now — <b>your</b> world · a non-alcoholic aperitif</div>
+    <div class="reveal" id="rev2"></div>
+    <div class="note" id="note2"></div>
+  </section>
+
+  <!-- S3 candidates -->
+  <section class="scene" data-s="3">
+    <div class="kick">Three names, hiding in your category</div>
+    <h1 style="font-size:clamp(24px,4vw,34px);margin-bottom:26px">Each one rewards the people who get it.</h1>
+    <div class="cands" id="cands"></div>
+  </section>
+</div>
+
+<div class="foot" id="foot">
+  <div class="dots" id="dots"></div>
+  <button class="btn" id="next">Continue →</button>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="sheet" id="sheet"></aside>
+
+<script>
+/* ---------- ambient depth dust (zspace feel) ---------- */
+const cv=document.getElementById('dust'),ctx=cv.getContext('2d');let W,H,DPR;
+function rz(){DPR=Math.min(devicePixelRatio||1,2);W=cv.width=innerWidth*DPR;H=cv.height=innerHeight*DPR;}
+addEventListener('resize',rz);rz();
+let dots=Array.from({length:90},()=>({x:Math.random()*W,y:Math.random()*H,z:Math.random(),s:Math.random()*1.4+0.2}));
+function dust(){ctx.clearRect(0,0,W,H);for(const p of dots){p.y-=(0.06+p.z*0.18)*DPR;if(p.y<0){p.y=H;p.x=Math.random()*W;}
+  ctx.fillStyle=`rgba(232,162,76,${0.05+p.z*0.16})`;ctx.beginPath();ctx.arc(p.x,p.y,p.s*DPR,0,6.28);ctx.fill();}requestAnimationFrame(dust);}dust();
+
+/* ---------- reveal builder (flex-collapse) ---------- */
+function buildLetters(el,word){el.innerHTML='';[...word].forEach(ch=>{const s=document.createElement('span');s.className='L';s.textContent=ch;el.appendChild(s);});}
+function splitReveal(el,word,ampAfter){ // ACETATE -> ACE & TATE
+  buildLetters(el,word);const ls=el.querySelectorAll('.L');
+  const amp=document.createElement('span');amp.className='amp';amp.textContent='&';el.insertBefore(amp,ls[ampAfter]);
+  setTimeout(()=>{amp.classList.add('show');ls.forEach((l,i)=>{if(i>=ampAfter)l.style.marginLeft='.04em';});},700);
+}
+function subsetReveal(el,word,keepIdx,litAll){ // APERITIVO -> APERTO
+  buildLetters(el,word);const ls=el.querySelectorAll('.L');
+  setTimeout(()=>{ls.forEach((l,i)=>{ if(keepIdx.includes(i)){l.classList.add('lit');} else {l.classList.add('gone');} });},800);
+}
+
+/* ---------- scenes ---------- */
+const scenes=[...document.querySelectorAll('.scene')];
+const dotsEl=document.getElementById('dots');scenes.forEach(()=>{const i=document.createElement('i');dotsEl.appendChild(i);});
+let cur=-1;
+const NEXT=['See the canon →','Mine my category →','Reveal the names →','— start over —'];
+function show(n){
+  cur=n;scenes.forEach(s=>s.classList.toggle('on',+s.dataset.s===n));
+  [...dotsEl.children].forEach((d,i)=>d.classList.toggle('on',i===n));
+  document.getElementById('next').textContent=NEXT[n]||'Continue →';
+  if(n===1){ document.getElementById('note1').classList.remove('show');document.getElementById('canon1').classList.remove('show');
+    splitReveal(document.getElementById('rev1'),'ACETATE',3);
+    setTimeout(()=>{const nt=document.getElementById('note1');nt.innerHTML='<b>Ace &amp; Tate</b> — sounds like two founders. It’s also <span class="hl">acetate</span>: the material eyewear frames are made of. Hidden in plain sight.';nt.classList.add('show');},1500);
+    setTimeout(()=>document.getElementById('canon1').classList.add('show'),2100);
+  }
+  if(n===2){ showDomain();
+    subsetReveal(document.getElementById('rev2'),'APERITIVO',[0,1,2,3,5,8]);
+    const nt=document.getElementById('note2');nt.classList.remove('show');nt.innerHTML='';
+    setTimeout(()=>{nt.innerHTML='<span class="hl">Aperto</span> — “open” in Italian, and the root hiding inside <b>aperitivo</b>. The welcome, disguised as the category. Insiders feel it; everyone else just likes the sound.';nt.classList.add('show');},1700);
+  }
+  if(n===3){ hideDomain(); const c=document.getElementById('cands');c.innerHTML='';
+    CANDS.forEach((d,i)=>{const el=document.createElement('div');el.className='cand';
+      el.innerHTML=`<div class="nm">${d.nm}</div><div class="src">${d.srcHtml}</div><div class="sc">${d.s} / 100 · ${d.tier}</div>`;
+      el.onclick=()=>openCard(d);c.appendChild(el);setTimeout(()=>el.classList.add('in'),120+i*140);});
+  }
+}
+document.getElementById('next').onclick=()=>show(cur>=scenes.length-1?0:cur+1);
+
+/* domain words */
+const DOMW=['ritual','evening','aperitivo','vespers','dusk','proof','belong','open','ceremony','bitter','spritz','golden hour','the bar','negroni','rite'];
+function showDomain(){const d=document.getElementById('domain');d.innerHTML='';DOMW.forEach((w,i)=>{const s=document.createElement('span');s.className='dw';
+  s.textContent=w;s.style.left=(8+Math.random()*84)+'%';s.style.top=(14+Math.random()*70)+'%';
+  s.style.fontSize=(12+Math.random()*9)+'px';d.appendChild(s);setTimeout(()=>s.style.opacity=(0.12+Math.random()*0.2),200+i*90);});}
+function hideDomain(){[...document.getElementById('domain').children].forEach(s=>s.style.opacity=0);}
+
+/* candidates + verdict */
+const CANDS=[
+  {nm:'Aperto',srcHtml:'aperitiv<u>o</u> → <u>apert</u>o',s:85,tier:'Strong',lens:'Hidden Construction · Linguistic',mech:'The “open” root of aperitivo, surfaced.',
+   layers:[['Sound','Short, warm, easy in any mouth.'],['Surface','Reads as a clean, ownable word.'],['Hidden','Italian for “open” — the welcome, and your category’s own root.']]},
+  {nm:'Vesper',srcHtml:'<u>vespers</u> · the evening service',s:88,tier:'Exceptional',lens:'Hidden Construction · Time/Myth',mech:'The hour the ritual begins — the evening star, and the evening rite.',
+   layers:[['Sound','Soft, distinctive, memorable.'],['Surface','Feels like an elegant name on its own.'],['Hidden','Vespers = the evening service; Vesper = the evening star. The ritual, encoded.']]},
+  {nm:'Proof',srcHtml:'zero-<u>proof</u> · your defining spec',s:79,tier:'Strong',lens:'Hidden Construction · Facet',mech:'Your category’s defining spec, worn openly as the name.',
+   layers:[['Sound','Single hard syllable — confident.'],['Surface','“Proof” = evidence, quality, standard.'],['Hidden','Zero-proof is the whole point — the spec becomes the swagger.']]}
+];
+function openCard(d){
+  document.getElementById('sheet').innerHTML=`<button class="x" id="sx">✕</button>
+    <span class="lns">${d.lens}</span><h2>${d.nm}</h2><div class="mech">${d.mech}</div>
+    <div class="layers">${d.layers.map(l=>`<div class="ly"><span class="n">${l[0]}</span><span><b>${l[1].split('—')[0]}</b>${l[1].includes('—')?' — '+l[1].split('—').slice(1).join('—'):''}</span></div>`).join('')}</div>
+    <div class="scoreh"><div class="n">${d.s}<small>/100</small></div><div class="t">${d.tier} · this lens</div></div>`;
+  document.getElementById('sheet').classList.add('on');document.getElementById('scrim').classList.add('on');
+  document.getElementById('sx').onclick=closeCard;
+}
+function closeCard(){document.getElementById('sheet').classList.remove('on');document.getElementById('scrim').classList.remove('on');}
+document.getElementById('scrim').onclick=closeCard;
+
+show(0);
+</script>
+</body>
+</html>
