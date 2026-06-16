@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>The Orbit — Naming Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#080809;
+    --ink:#F4F1EA;
+    --soft:#8a867d;
+    --hair:rgba(255,255,255,.11);
+    --accent:#E8A24C;
+    --accent-soft:rgba(232,162,76,.16);
+    --serif:"Fraunces",Georgia,serif;
+    --ui:"Inter",system-ui,sans-serif;
+    --mono:"Space Mono",monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--ui);overflow:hidden;}
+  body{
+    position:fixed;inset:0;
+    overscroll-behavior:none;
+    -webkit-font-smoothing:antialiased;
+  }
+  #stage{position:absolute;inset:0;}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation;}
+
+  /* ===== top chrome ===== */
+  .topbar{
+    position:absolute;left:0;right:0;
+    top:env(safe-area-inset-top,0);
+    padding:18px 20px 0;
+    display:flex;justify-content:space-between;align-items:flex-start;
+    pointer-events:none;z-index:6;
+  }
+  .brand{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--soft);text-transform:uppercase;}
+  .brand b{color:var(--ink);font-weight:700;}
+  .progress{display:flex;gap:7px;margin-top:9px;}
+  .pdot{width:7px;height:7px;border-radius:50%;border:1px solid var(--hair);transition:all .5s ease;}
+  .pdot.done{background:var(--accent);border-color:var(--accent);box-shadow:0 0 10px var(--accent-soft);}
+  .pdot.active{border-color:var(--accent);transform:scale(1.25);}
+  .hint{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--soft);text-align:right;text-transform:uppercase;max-width:120px;line-height:1.5;}
+
+  /* ===== centre DOM overlay ===== */
+  #overlay{
+    position:absolute;left:50%;top:50%;
+    transform:translate(-50%,-50%);
+    width:min(86vw,360px);
+    z-index:5;
+    text-align:center;
+    pointer-events:none;
+    transition:opacity .45s ease, transform .45s ease;
+  }
+  #overlay.hidden{opacity:0;transform:translate(-50%,-46%) scale(.96);pointer-events:none;}
+  .ov-kicker{font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;color:var(--accent);text-transform:uppercase;margin-bottom:12px;transition:color .6s ease;}
+  .ov-q{font-family:var(--serif);font-weight:400;font-size:25px;line-height:1.18;letter-spacing:-.01em;margin:0 0 18px;}
+  .ov-body{pointer-events:auto;}
+
+  .field{
+    width:100%;background:rgba(255,255,255,.035);
+    border:1px solid var(--hair);border-radius:13px;
+    color:var(--ink);font-family:var(--ui);font-size:15px;
+    padding:13px 15px;outline:none;resize:none;line-height:1.4;
+    transition:border-color .3s ease, background .3s ease;
+  }
+  .field:focus{border-color:var(--accent);background:rgba(255,255,255,.06);}
+  .field::placeholder{color:var(--soft);}
+  textarea.field{min-height:104px;}
+
+  .row{display:flex;gap:9px;}
+  .row .field{flex:1;text-align:center;}
+
+  .example{
+    margin-top:11px;font-family:var(--mono);font-size:11px;letter-spacing:.05em;
+    color:var(--soft);background:none;border:none;cursor:pointer;
+    text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--hair);
+    pointer-events:auto;
+  }
+  .example:active{color:var(--accent);}
+
+  .chips{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin-top:4px;}
+  .chip{
+    font-family:var(--ui);font-size:13.5px;font-weight:500;
+    padding:9px 15px;border-radius:999px;cursor:pointer;
+    border:1px solid var(--hair);background:rgba(255,255,255,.03);
+    color:var(--ink);position:relative;transition:transform .18s ease, border-color .25s ease, background .25s ease;
+  }
+  .chip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle;transform:translateY(-1px);}
+  .chip:active{transform:scale(.95);}
+  .chip.sel{border-color:transparent;color:#0a0a0a;font-weight:600;}
+
+  .btn{
+    margin-top:16px;width:100%;
+    font-family:var(--ui);font-weight:600;font-size:14.5px;letter-spacing:.01em;
+    padding:14px;border-radius:13px;cursor:pointer;
+    background:var(--accent);color:#0a0a0a;border:none;
+    transition:opacity .25s ease, transform .15s ease, background .5s ease;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn[disabled]{opacity:.32;cursor:default;}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--hair);}
+
+  .prefix{font-family:var(--serif);font-size:18px;color:var(--soft);align-self:center;padding:0 2px;}
+  .onlyline{display:flex;gap:8px;align-items:center;justify-content:center;}
+
+  /* ===== name card ===== */
+  #card{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);
+    width:min(86vw,360px);z-index:7;
+    background:linear-gradient(180deg,rgba(22,22,24,.97),rgba(12,12,14,.98));
+    border:1px solid var(--hair);border-radius:20px;
+    padding:26px 24px 24px;
+    box-shadow:0 30px 80px rgba(0,0,0,.6);
+    opacity:0;pointer-events:none;transition:opacity .35s ease, transform .35s ease;
+    backdrop-filter:blur(8px);
+  }
+  #card.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto;}
+  .card-lens{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;}
+  .card-name{font-family:var(--serif);font-size:42px;font-weight:400;line-height:1;margin:10px 0 4px;letter-spacing:-.02em;}
+  .card-story{font-size:15px;line-height:1.5;color:var(--ink);opacity:.9;margin:14px 0 18px;}
+  .card-foot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--hair);padding-top:16px;}
+  .score{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--soft);}
+  .score b{font-family:var(--serif);font-size:26px;color:var(--accent);font-weight:400;margin-left:6px;letter-spacing:0;}
+  .card-x{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--soft);cursor:pointer;text-transform:uppercase;background:none;border:none;}
+
+  /* ===== bottom hint (mobile reassurance) ===== */
+  .footnote{
+    position:absolute;left:0;right:0;
+    bottom:calc(env(safe-area-inset-bottom,0) + 16px);
+    text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+    color:var(--soft);text-transform:uppercase;z-index:4;pointer-events:none;
+    opacity:.7;transition:opacity .4s ease;
+  }
+  .scrim{position:absolute;inset:0;z-index:6;background:rgba(4,4,5,.55);opacity:0;pointer-events:none;transition:opacity .35s ease;}
+  .scrim.show{opacity:1;pointer-events:auto;}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+
+  <div class="topbar">
+    <div>
+      <div class="brand"><b>The Orbit</b> · naming engine</div>
+      <div class="progress">
+        <div class="pdot" data-p="0"></div>
+        <div class="pdot" data-p="1"></div>
+        <div class="pdot" data-p="2"></div>
+      </div>
+    </div>
+    <div class="hint" id="hint">tap a node<br/>to answer</div>
+  </div>
+
+  <div id="overlay" class="hidden">
+    <div class="ov-kicker" id="ovKicker">Question 01</div>
+    <h2 class="ov-q" id="ovQ">What are you building?</h2>
+    <div class="ov-body" id="ovBody"></div>
+  </div>
+
+  <div class="scrim" id="scrim"></div>
+  <div id="card">
+    <div class="card-lens" id="cardLens">TIME · MYTH</div>
+    <div class="card-name" id="cardName">Vesper</div>
+    <div class="card-story" id="cardStory"></div>
+    <div class="card-foot">
+      <div class="score">FIT <b id="cardScore">88</b></div>
+      <button class="card-x" id="cardX">Close ✕</button>
+    </div>
+  </div>
+
+  <div class="footnote" id="footnote">the system auto-rotates · tap to choose</div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- data ---------- */
+  const FEELINGS = [
+    {id:"relief",   label:"Relief",      color:"#A8E0D8"},
+    {id:"momentum", label:"Momentum",    color:"#3DE0FF"},
+    {id:"status",   label:"High-Status", color:"#C9A24C"},
+    {id:"wonder",   label:"Wonder",      color:"#9B6CF2"},
+    {id:"rebellion",label:"Rebellion",   color:"#C6F24E"},
+    {id:"belonging",label:"Belonging",   color:"#E8A24C"},
+    {id:"control",  label:"Control",     color:"#9FB2C6"},
+  ];
+  const NAMES = [
+    {name:"Vesper",  lens:"TIME · MYTH",        story:"The evening star — the hour the ritual begins.",   score:88},
+    {name:"Aperto",  lens:"LINGUISTIC · IT",    story:"‘Open’ — hidden inside aperitivo.",                score:85},
+    {name:"Commons", lens:"PLACE · METAPHOR",   story:"The shared table everyone belongs at.",            score:81},
+    {name:"Hearth",  lens:"METAPHOR",           story:"The warm center people gather around.",            score:78},
+    {name:"Cohort",  lens:"IDENTITY",           story:"Your people — the ones you arrive with.",          score:73},
+  ];
+  const EXAMPLE = "a non-alcoholic aperitif for people who quit drinking but miss the ritual of a proper drink in the evening — about still feeling like you belong at the bar, premium and a little ceremonial";
+
+  const QUESTIONS = [
+    {kicker:"Question 01", q:"What are you building?"},
+    {kicker:"Question 02", q:"The single feeling"},
+    {kicker:"Question 03", q:"Your onlyness"},
+  ];
+
+  /* ---------- state ---------- */
+  const state = {
+    accent:"#E8A24C",
+    accentRGB:[232,162,76],
+    activeQ:-1,                 // which question is pulled in (-1 = none)
+    answers:[null,null,null],   // {what} | {feeling} | {only:[a,b]}
+    phase:"intro",              // intro -> answering -> names
+    selectedName:-1,
+    flood:0,                    // 0..1 color flood amount
+  };
+
+  /* ---------- canvas setup ---------- */
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+  let W=0,H=0,DPR=1,CX=0,CY=0,RU=0;  // RU = orbit radius unit
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio||1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W*DPR; canvas.height = H*DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    CX = W/2; CY = H/2;
+    RU = Math.min(W,H);
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  /* ---------- helpers ---------- */
+  function hexRGB(hex){
+    const n = parseInt(hex.slice(1),16);
+    return [(n>>16)&255,(n>>8)&255,n&255];
+  }
+  function lerp(a,b,t){return a+(b-a)*t;}
+  function rgba(rgb,a){return `rgba(${rgb[0]|0},${rgb[1]|0},${rgb[2]|0},${a})`;}
+  function mix(a,b,t){return [lerp(a[0],b[0],t),lerp(a[1],b[1],t),lerp(a[2],b[2],t)];}
+  const INK_RGB=[244,241,234], SOFT_RGB=[138,134,125];
+
+  /* orbit bodies. Each question is a body; once answered it stays as satellite.
+     names appear as an outer ring after phase==="names". */
+  // angular speed (radians/sec) — slow auto-rotation
+  const SPD_Q = 0.085;
+  const SPD_N = -0.05;
+
+  // base angles spread around
+  const qAngle0 = [-Math.PI/2, Math.PI/6, Math.PI*0.83];
+
+  let t0 = performance.now();
+  let timeSec = 0;
+
+  // pulse/birth animation tracking
+  const qBorn = [0,0,0];        // timestamp answered
+  let namesBorn = 0;
+
+  /* ---------- geometry per frame ---------- */
+  function qPos(i){
+    // radius: active question gets pulled toward center (handled by overlay; node hides)
+    const baseR = RU*0.31;
+    const ang = qAngle0[i] + timeSec*SPD_Q;
+    return {
+      x: CX + Math.cos(ang)*baseR,
+      y: CY + Math.sin(ang)*baseR*0.82,
+      ang
+    };
+  }
+  function nPos(i){
+    const baseR = RU*0.435;
+    const ang = (i/NAMES.length)*Math.PI*2 + timeSec*SPD_N - Math.PI/2;
+    return {
+      x: CX + Math.cos(ang)*baseR,
+      y: CY + Math.sin(ang)*baseR*0.82,
+      ang
+    };
+  }
+
+  // store screen positions for hit-testing
+  const hit = []; // {x,y,r,type,i}
+
+  /* ---------- drawing ---------- */
+  function draw(now){
+    timeSec = (now - t0)/1000;
+    // ease accent flood
+    state.flood = lerp(state.flood, state.answers[1]?1:0, 0.06);
+
+    ctx.clearRect(0,0,W,H);
+
+    // vignette / depth
+    const vg = ctx.createRadialGradient(CX,CY*0.92,RU*0.05, CX,CY, RU*0.85);
+    const aRGB = state.accentRGB;
+    const floodA = 0.05 + state.flood*0.07;
+    vg.addColorStop(0, rgba(mix([14,14,16],aRGB,state.flood*0.18), 1));
+    vg.addColorStop(0.55, rgba(mix([10,10,12],aRGB,state.flood*0.05), 1));
+    vg.addColorStop(1, "rgba(4,4,5,1)");
+    ctx.fillStyle = vg; ctx.fillRect(0,0,W,H);
+
+    hit.length = 0;
+
+    // ---- orbit rings (faint guides) ----
+    drawRing(RU*0.31, 0.07);
+    if(state.phase==="names" || namesBorn) drawRing(RU*0.435, 0.09 * namesEase());
+
+    // ---- threads from center to answered satellites ----
+    for(let i=0;i<3;i++){
+      if(state.answers[i] && state.activeQ!==i){
+        const p = qPos(i);
+        drawThread(p.x,p.y, i);
+      }
+    }
+    // threads center -> name bodies (subtle web) once names exist
+    if(namesBorn){
+      const e = namesEase();
+      for(let i=0;i<NAMES.length;i++){
+        const p = nPos(i);
+        ctx.strokeStyle = rgba(aRGB, 0.05*e);
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(CX,CY); ctx.lineTo(p.x,p.y); ctx.stroke();
+      }
+    }
+
+    // ---- center core (the user) ----
+    drawCore();
+
+    // ---- question bodies ----
+    for(let i=0;i<3;i++){
+      if(state.activeQ===i) continue; // pulled into center → handled by DOM overlay
+      drawQuestionBody(i);
+    }
+
+    // ---- name bodies (outer ring) ----
+    if(namesBorn){
+      for(let i=0;i<NAMES.length;i++) drawNameBody(i);
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  function namesEase(){
+    if(!namesBorn) return 0;
+    const t = Math.min(1,(performance.now()-namesBorn)/900);
+    return t*t*(3-2*t);
+  }
+  function qEase(i){
+    if(!qBorn[i]) return 0;
+    const t = Math.min(1,(performance.now()-qBorn[i])/700);
+    return t*t*(3-2*t);
+  }
+
+  function drawRing(r, alpha){
+    ctx.save();
+    ctx.translate(CX,CY); ctx.scale(1,0.82);
+    ctx.strokeStyle = rgba(INK_RGB, alpha);
+    ctx.lineWidth=1; ctx.setLineDash([2,7]);
+    ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  function drawThread(x,y,i){
+    const aRGB = state.accentRGB;
+    // travelling pulse along thread
+    const g = ctx.createLinearGradient(CX,CY,x,y);
+    g.addColorStop(0, rgba(aRGB,0.30));
+    g.addColorStop(1, rgba(aRGB,0.08));
+    ctx.strokeStyle=g; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(CX,CY); ctx.lineTo(x,y); ctx.stroke();
+    // pulse dot
+    const ph = (timeSec*0.4 + i*0.33)%1;
+    const px = lerp(CX,x,ph), py=lerp(CY,y,ph);
+    ctx.fillStyle = rgba(aRGB, (1-ph)*0.7);
+    ctx.beginPath(); ctx.arc(px,py,2.2,0,Math.PI*2); ctx.fill();
+  }
+
+  function drawCore(){
+    const aRGB = state.accentRGB;
+    const answered = state.answers.filter(Boolean).length;
+    const pulse = 1 + Math.sin(timeSec*1.6)*0.04;
+    const baseR = (16 + answered*7) * pulse;
+    // glow
+    const gg = ctx.createRadialGradient(CX,CY,0,CX,CY,baseR*4);
+    gg.addColorStop(0, rgba(aRGB, 0.22 + state.flood*0.12));
+    gg.addColorStop(1, rgba(aRGB,0));
+    ctx.fillStyle=gg;
+    ctx.beginPath(); ctx.arc(CX,CY,baseR*4,0,Math.PI*2); ctx.fill();
+    // ring
+    ctx.strokeStyle = rgba(aRGB, 0.85);
+    ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(CX,CY,baseR,0,Math.PI*2); ctx.stroke();
+    // inner dot
+    ctx.fillStyle = rgba(mix(INK_RGB,aRGB,0.4+state.flood*0.5), 0.9);
+    ctx.beginPath(); ctx.arc(CX,CY,baseR*0.34,0,Math.PI*2); ctx.fill();
+    // label "you" when nothing active
+    if(state.activeQ===-1 && state.phase!=="names"){
+      ctx.font = "10px 'Space Mono', monospace";
+      ctx.fillStyle = rgba(SOFT_RGB,0.8);
+      ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.fillText("YOU", CX, CY);
+    }
+  }
+
+  function drawQuestionBody(i){
+    const p = qPos(i);
+    const answered = !!state.answers[i];
+    const isNext = !answered && state.phase!=="names" && nextUnanswered()===i;
+    const e = answered ? qEase(i) : 1;
+    const aRGB = state.accentRGB;
+
+    // satellite size
+    let r = answered ? 30 : (isNext?26:20);
+    const pulse = isNext ? 1+Math.sin(timeSec*2.4)*0.07 : 1;
+    r *= pulse;
+
+    // halo
+    if(answered || isNext){
+      const gg = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*2.6);
+      const hcol = answered ? aRGB : aRGB;
+      gg.addColorStop(0, rgba(hcol, (answered?0.20:0.14)*e + (isNext?0.06:0)));
+      gg.addColorStop(1, rgba(hcol,0));
+      ctx.fillStyle=gg;
+      ctx.beginPath(); ctx.arc(p.x,p.y,r*2.6,0,Math.PI*2); ctx.fill();
+    }
+
+    // body
+    ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+    if(answered){
+      ctx.fillStyle = rgba(mix([18,18,20],aRGB,0.12),1);
+      ctx.fill();
+      ctx.strokeStyle = rgba(aRGB,0.9); ctx.lineWidth=1.5; ctx.stroke();
+    } else {
+      ctx.fillStyle = "rgba(20,20,22,0.9)";
+      ctx.fill();
+      ctx.strokeStyle = isNext ? rgba(aRGB,0.9) : rgba(INK_RGB,0.28);
+      ctx.lineWidth = isNext?1.6:1; ctx.stroke();
+    }
+
+    // number / content
+    ctx.textAlign="center"; ctx.textBaseline="middle";
+    if(answered){
+      drawSatelliteContent(i,p,r,aRGB);
+    } else {
+      ctx.font="600 14px 'Fraunces', serif";
+      ctx.fillStyle = isNext ? rgba(aRGB,1) : rgba(INK_RGB,0.7);
+      ctx.fillText("0"+(i+1), p.x, p.y-1);
+      // tiny label below
+      ctx.font="9px 'Space Mono', monospace";
+      ctx.fillStyle = rgba(SOFT_RGB, isNext?1:0.7);
+      const lab = i===0?"BUILD":i===1?"FEEL":"ONLY";
+      ctx.fillText(lab, p.x, p.y+r+13);
+    }
+
+    hit.push({x:p.x,y:p.y,r:Math.max(r+14,34),type:"q",i});
+  }
+
+  function drawSatelliteContent(i,p,r,aRGB){
+    if(i===0){
+      // "what" — show a couple words
+      const words = (state.answers[0].what||"").split(/\s+/).filter(Boolean).slice(0,2);
+      ctx.font="600 11px 'Fraunces', serif";
+      ctx.fillStyle = rgba(INK_RGB,0.95);
+      ctx.fillText("✓", p.x, p.y-1);
+      ctx.font="8.5px 'Space Mono', monospace";
+      ctx.fillStyle = rgba(SOFT_RGB,1);
+      const txt = words.join(" ").toUpperCase().slice(0,16) || "DEFINED";
+      ctx.fillText(txt, p.x, p.y+r+13);
+    } else if(i===1){
+      const f = FEELINGS.find(f=>f.id===state.answers[1].feeling);
+      ctx.fillStyle = f.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y,r*0.4,0,Math.PI*2); ctx.fill();
+      ctx.font="8.5px 'Space Mono', monospace";
+      ctx.fillStyle = rgba(hexRGB(f.color),1);
+      ctx.fillText(f.label.toUpperCase(), p.x, p.y+r+13);
+    } else {
+      ctx.font="600 11px 'Fraunces', serif";
+      ctx.fillStyle = rgba(aRGB,1);
+      ctx.fillText("only", p.x, p.y-1);
+      ctx.font="8.5px 'Space Mono', monospace";
+      ctx.fillStyle = rgba(SOFT_RGB,1);
+      const o = state.answers[2].only;
+      ctx.fillText((o[0]+" "+o[1]).toUpperCase().slice(0,16), p.x, p.y+r+13);
+    }
+  }
+
+  function drawNameBody(i){
+    const p = nPos(i);
+    const e = namesEase();
+    const aRGB = state.accentRGB;
+    const sel = state.selectedName===i;
+    const n = NAMES[i];
+    // size scales a touch with score
+    let r = (22 + (n.score-73)*0.55) * e;
+    const pulse = 1+Math.sin(timeSec*1.8 + i)*0.05;
+    r*=pulse;
+
+    // halo
+    const gg = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*2.4);
+    gg.addColorStop(0, rgba(aRGB, (sel?0.28:0.14)*e));
+    gg.addColorStop(1, rgba(aRGB,0));
+    ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(p.x,p.y,r*2.4,0,Math.PI*2); ctx.fill();
+
+    ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+    ctx.fillStyle = sel ? rgba(aRGB,0.9) : rgba(mix([20,20,22],aRGB,0.1),0.96);
+    ctx.fill();
+    ctx.strokeStyle = rgba(aRGB, sel?1:0.55); ctx.lineWidth = sel?2:1.2; ctx.stroke();
+
+    // name text
+    ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.font=`400 ${Math.max(12,r*0.62)}px 'Fraunces', serif`;
+    ctx.fillStyle = sel ? "#0a0a0a" : rgba(INK_RGB, e);
+    ctx.fillText(n.name, p.x, p.y);
+    // lens label
+    ctx.font="8px 'Space Mono', monospace";
+    ctx.fillStyle = rgba(SOFT_RGB, e);
+    ctx.fillText(n.lens.split(" · ")[0], p.x, p.y+r+12);
+
+    hit.push({x:p.x,y:p.y,r:Math.max(r+12,30),type:"n",i});
+  }
+
+  function nextUnanswered(){
+    for(let i=0;i<3;i++) if(!state.answers[i]) return i;
+    return -1;
+  }
+
+  /* ---------- DOM overlay logic ---------- */
+  const overlay = document.getElementById("overlay");
+  const ovKicker = document.getElementById("ovKicker");
+  const ovQ = document.getElementById("ovQ");
+  const ovBody = document.getElementById("ovBody");
+  const footnote = document.getElementById("footnote");
+
+  function setAccent(color){
+    state.accent = color;
+    state.accentRGB = hexRGB(color);
+    const r=document.documentElement.style;
+    r.setProperty("--accent", color);
+    r.setProperty("--accent-soft", rgba(state.accentRGB,0.16));
+  }
+
+  function openQuestion(i){
+    if(state.answers[i] || state.phase==="names") return;
+    state.activeQ = i;
+    buildOverlay(i);
+    overlay.classList.remove("hidden");
+    footnote.style.opacity = "0";
+    updateProgress();
+  }
+  function closeOverlay(){
+    overlay.classList.add("hidden");
+    state.activeQ = -1;
+    footnote.style.opacity = ".7";
+    updateProgress();
+  }
+
+  function buildOverlay(i){
+    ovKicker.textContent = QUESTIONS[i].kicker;
+    ovQ.textContent = QUESTIONS[i].q;
+    ovBody.innerHTML = "";
+
+    if(i===0){
+      const ta = el("textarea","field");
+      ta.placeholder = "Describe it in a sentence or two…";
+      ta.value = state.answers[0]?.what || "";
+      const ex = el("button","example"); ex.textContent="↳ try an example";
+      ex.onclick = ()=>{ ta.value = EXAMPLE; ta.focus(); btn.disabled=false; };
+      const btn = el("button","btn"); btn.textContent="Form this world →"; btn.disabled = !ta.value.trim();
+      ta.oninput = ()=>{ btn.disabled = !ta.value.trim(); };
+      btn.onclick = ()=>{ answerQ(0,{what:ta.value.trim()}); };
+      ovBody.append(ta,ex,btn);
+      setTimeout(()=>ta.focus(),120);
+    }
+
+    else if(i===1){
+      const wrap = el("div","chips");
+      let chosen = state.answers[1]?.feeling || null;
+      const btn = el("button","btn"); btn.textContent="Flood the world →"; btn.disabled = !chosen;
+      FEELINGS.forEach(f=>{
+        const c = el("button","chip");
+        c.innerHTML = `<span class="dot" style="background:${f.color}"></span>${f.label}`;
+        if(chosen===f.id){ c.classList.add("sel"); c.style.background=f.color; setAccent(f.color); }
+        c.onclick = ()=>{
+          chosen = f.id;
+          wrap.querySelectorAll(".chip").forEach(x=>{x.classList.remove("sel");x.style.background="";});
+          c.classList.add("sel"); c.style.background=f.color;
+          setAccent(f.color);                 // <- live recolor of the world
+          btn.disabled=false;
+        };
+        wrap.appendChild(c);
+      });
+      btn.onclick = ()=>{ if(chosen) answerQ(1,{feeling:chosen}); };
+      ovBody.append(wrap,btn);
+    }
+
+    else {
+      const line = el("div","onlyline");
+      const pre = el("span","prefix"); pre.textContent="Only";
+      const a = el("input","field"); a.placeholder="we"; a.value=state.answers[2]?.only[0]||"";
+      const b = el("input","field"); b.placeholder="belong"; b.value=state.answers[2]?.only[1]||"";
+      a.setAttribute("maxlength","18"); b.setAttribute("maxlength","18");
+      line.append(pre,a,b);
+      const btn = el("button","btn"); btn.textContent="Complete the system ✦";
+      const chk = ()=>{ btn.disabled = !(a.value.trim()&&b.value.trim()); };
+      a.oninput=chk; b.oninput=chk; chk();
+      btn.onclick = ()=>{ answerQ(2,{only:[a.value.trim(),b.value.trim()]}); };
+      ovBody.append(line,btn);
+      setTimeout(()=>a.focus(),120);
+    }
+  }
+
+  function answerQ(i,val){
+    state.answers[i]=val;
+    qBorn[i]=performance.now();
+    closeOverlay();
+    updateProgress();
+    // auto-advance: open next question shortly, or trigger names
+    const next = nextUnanswered();
+    if(next===-1){
+      setTimeout(revealNames, 650);
+    } else {
+      // gentle nudge: don't auto-open (keeps it tap-driven), just let it pulse.
+      // but auto-open the feeling/onlyness step for momentum:
+      setTimeout(()=>{ if(state.phase!=="names") openQuestion(next); }, 520);
+    }
+  }
+
+  function revealNames(){
+    state.phase="names";
+    namesBorn = performance.now();
+    ovKicker.textContent="Your system";
+    footnote.textContent = "tap a name to read its story";
+    footnote.style.opacity=".8";
+    updateProgress();
+  }
+
+  function updateProgress(){
+    document.querySelectorAll(".pdot").forEach((d,idx)=>{
+      d.classList.toggle("done", !!state.answers[idx]);
+      d.classList.toggle("active", state.activeQ===idx);
+    });
+    const hint = document.getElementById("hint");
+    if(state.phase==="names"){ hint.innerHTML="tap a name<br/>to read it"; }
+    else if(state.activeQ>=0){ hint.innerHTML="answer<br/>then it orbits"; }
+    else {
+      const n = nextUnanswered();
+      hint.innerHTML = n>=0 ? "tap node 0"+(n+1)+"<br/>to answer" : "tap a node<br/>to answer";
+    }
+  }
+
+  function el(tag,cls){const e=document.createElement(tag); if(cls)e.className=cls; return e;}
+
+  /* ---------- name card ---------- */
+  const card = document.getElementById("card");
+  const scrim = document.getElementById("scrim");
+  function openCard(i){
+    state.selectedName=i;
+    const n=NAMES[i];
+    document.getElementById("cardLens").textContent=n.lens;
+    document.getElementById("cardName").textContent=n.name;
+    document.getElementById("cardStory").textContent=n.story;
+    document.getElementById("cardScore").textContent=n.score;
+    card.classList.add("show"); scrim.classList.add("show");
+  }
+  function closeCard(){ card.classList.remove("show"); scrim.classList.remove("show"); state.selectedName=-1; }
+  document.getElementById("cardX").onclick=closeCard;
+  scrim.onclick=closeCard;
+
+  /* ---------- hit testing (tap-only) ---------- */
+  function onTap(clientX,clientY){
+    if(card.classList.contains("show")) return;
+    if(state.activeQ>=0) return; // overlay is up; let DOM handle it
+    // test name bodies first (outer), then questions
+    let best=null,bd=1e9;
+    for(const h of hit){
+      const d=Math.hypot(clientX-h.x, clientY-h.y);
+      if(d<h.r && d<bd){ bd=d; best=h; }
+    }
+    if(!best) return;
+    if(best.type==="n"){ openCard(best.i); }
+    else if(best.type==="q"){ openQuestion(best.i); }
+  }
+  canvas.addEventListener("click", e=>{ onTap(e.clientX, e.clientY); });
+  // touch (passive) — click already fires on tap, but ensure responsiveness
+  canvas.addEventListener("touchend", e=>{
+    if(e.changedTouches&&e.changedTouches.length){
+      const t=e.changedTouches[0];
+      // let click handle it to avoid double; only fallback if needed
+    }
+  }, {passive:true});
+
+  /* ---------- intro: float overlay invitation, then let user tap ---------- */
+  function start(){
+    setAccent("#E8A24C");
+    state.phase="answering";
+    updateProgress();
+    requestAnimationFrame(draw);
+    // After a beat, auto-open Q1 to teach the interaction.
+    setTimeout(()=>{ if(state.activeQ===-1 && state.phase!=="names") openQuestion(0); }, 900);
+  }
+  start();
+
+})();
+</script>
+</body>
+</html>

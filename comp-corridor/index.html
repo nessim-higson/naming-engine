@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<title>The Corridor · Naming Walk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,400&family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#080809;
+    --ink:#F4F1EA;
+    --soft:#8a867d;
+    --hair:rgba(255,255,255,.11);
+    --accent:#E8A24C;
+    --accent-rgb:232,162,76;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);}
+  body{
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+    position:fixed;inset:0;
+    overscroll-behavior:none;
+    touch-action:manipulation;
+  }
+  #corridor{position:fixed;inset:0;display:block;z-index:0;}
+
+  /* radial vignette */
+  #vignette{
+    position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(120% 90% at 50% 42%, rgba(0,0,0,0) 38%, rgba(0,0,0,.55) 78%, rgba(0,0,0,.86) 100%);
+    transition:background .9s ease;
+  }
+
+  /* progress / station indicator */
+  #progress{
+    position:fixed;z-index:6;left:0;right:0;
+    top:calc(env(safe-area-inset-top,0) + 18px);
+    display:flex;justify-content:center;gap:0;
+    pointer-events:none;
+  }
+  .prog-track{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 16px;border-radius:100px;
+    background:rgba(12,12,14,.42);
+    border:1px solid var(--hair);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  }
+  .prog-seg{display:flex;align-items:center;gap:10px;}
+  .prog-dot{
+    width:7px;height:7px;border-radius:50%;
+    background:rgba(255,255,255,.18);
+    transition:background .5s ease, box-shadow .5s ease, transform .5s ease;
+  }
+  .prog-dot.done{background:var(--soft);}
+  .prog-dot.active{
+    background:var(--accent);transform:scale(1.5);
+    box-shadow:0 0 14px rgba(var(--accent-rgb),.8);
+  }
+  .prog-line{
+    width:26px;height:1px;background:rgba(255,255,255,.14);
+    transition:background .5s ease;
+  }
+  .prog-line.done{background:var(--soft);}
+  .prog-label{
+    font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--soft);margin-left:4px;
+    white-space:nowrap;
+  }
+
+  /* foreground UI overlay */
+  #stage{
+    position:fixed;inset:0;z-index:5;
+    display:flex;flex-direction:column;justify-content:flex-end;
+    padding:0 22px;
+    padding-top:calc(env(safe-area-inset-top,0) + 78px);
+    padding-bottom:calc(env(safe-area-inset-bottom,0) + 26px);
+    pointer-events:none;
+  }
+  .panel{
+    width:100%;max-width:540px;margin:0 auto;
+    pointer-events:auto;
+    opacity:0;transform:translateY(26px) scale(.98);
+    transition:opacity .55s ease, transform .55s cubic-bezier(.2,.7,.2,1);
+    will-change:transform,opacity;
+  }
+  .panel.show{opacity:1;transform:translateY(0) scale(1);}
+  .panel.leaving{opacity:0;transform:translateY(-34px) scale(.96);transition:opacity .45s ease, transform .45s ease;}
+
+  .qkicker{
+    font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--accent);margin-bottom:14px;
+    display:flex;align-items:center;gap:9px;
+    transition:color .9s ease;
+  }
+  .qkicker .num{
+    border:1px solid rgba(var(--accent-rgb),.5);border-radius:50%;
+    width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;
+    font-size:10px;color:var(--accent);transition:border-color .9s ease,color .9s ease;
+  }
+  .qtitle{
+    font-family:'Fraunces',serif;font-weight:340;
+    font-size:clamp(30px,8.4vw,46px);line-height:1.04;
+    letter-spacing:-.01em;margin-bottom:20px;
+    color:var(--ink);
+  }
+  .qtitle em{font-style:italic;color:var(--accent);transition:color .9s ease;}
+
+  .field{
+    width:100%;background:rgba(255,255,255,.035);
+    border:1px solid var(--hair);border-radius:16px;
+    color:var(--ink);font-family:'Inter',sans-serif;
+    font-size:16px;line-height:1.5;font-weight:400;
+    padding:16px 17px;resize:none;outline:none;
+    transition:border-color .3s ease, background .3s ease, box-shadow .3s ease;
+    -webkit-appearance:none;
+  }
+  textarea.field{min-height:104px;max-height:38vh;}
+  .field::placeholder{color:rgba(138,134,125,.65);}
+  .field:focus{
+    border-color:rgba(var(--accent-rgb),.55);
+    background:rgba(255,255,255,.05);
+    box-shadow:0 0 0 4px rgba(var(--accent-rgb),.09);
+  }
+
+  .row{display:flex;gap:10px;align-items:center;}
+  .only-pre{
+    font-family:'Fraunces',serif;font-style:italic;font-size:22px;
+    color:var(--soft);flex:0 0 auto;
+  }
+  .only-field{flex:1 1 0;min-width:0;text-align:center;padding:14px 12px;font-size:16px;}
+
+  .actions{
+    display:flex;align-items:center;gap:12px;margin-top:16px;
+  }
+  .btn{
+    pointer-events:auto;cursor:pointer;border:none;outline:none;
+    font-family:'Inter',sans-serif;font-weight:500;
+    border-radius:100px;transition:transform .2s ease, background .3s ease, opacity .3s ease, box-shadow .3s ease;
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    min-height:52px;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-primary{
+    flex:1 1 auto;background:var(--accent);color:#0a0a0a;
+    font-size:16px;font-weight:600;letter-spacing:.01em;
+    padding:0 24px;box-shadow:0 8px 30px rgba(var(--accent-rgb),.28);
+  }
+  .btn-primary:disabled{opacity:.32;box-shadow:none;cursor:default;}
+  .btn-ghost{
+    background:transparent;color:var(--soft);font-size:13px;
+    padding:0 6px;min-height:44px;
+    font-family:'Space Mono',monospace;letter-spacing:.04em;
+    text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--hair);
+  }
+  .btn-arrow{font-size:18px;line-height:1;}
+
+  /* feeling chips */
+  .chips{display:flex;flex-wrap:wrap;gap:9px;}
+  .chip{
+    pointer-events:auto;cursor:pointer;
+    border:1px solid var(--hair);background:rgba(255,255,255,.03);
+    color:var(--ink);border-radius:100px;
+    padding:11px 16px;font-size:14px;font-weight:500;
+    display:inline-flex;align-items:center;gap:9px;
+    transition:transform .18s ease, border-color .3s ease, background .3s ease, box-shadow .3s ease;
+    min-height:44px;
+  }
+  .chip:active{transform:scale(.95);}
+  .chip .swatch{
+    width:11px;height:11px;border-radius:50%;flex:0 0 auto;
+    box-shadow:0 0 9px currentColor;
+  }
+  .chip.sel{border-color:currentColor;background:rgba(255,255,255,.07);box-shadow:0 0 0 1px currentColor, 0 6px 24px rgba(0,0,0,.4);}
+
+  /* name candidates payoff */
+  #names{
+    position:fixed;inset:0;z-index:7;display:none;
+    flex-direction:column;justify-content:flex-end;
+    padding:0 22px;
+    padding-bottom:calc(env(safe-area-inset-bottom,0) + 26px);
+    pointer-events:none;
+  }
+  #names.show{display:flex;}
+  .names-inner{
+    width:100%;max-width:540px;margin:0 auto;pointer-events:auto;
+  }
+  .names-head{
+    font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--accent);margin-bottom:12px;
+    opacity:0;transform:translateY(12px);transition:all .6s ease;
+  }
+  .names-head.in{opacity:1;transform:none;}
+  .name-list{display:flex;flex-direction:column;gap:9px;
+    max-height:58vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    margin:0 -4px;padding:2px 4px 4px;
+  }
+  .name-card{
+    cursor:pointer;border:1px solid var(--hair);
+    background:rgba(16,16,18,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    border-radius:16px;padding:15px 17px;
+    display:flex;align-items:center;gap:14px;
+    opacity:0;transform:translateY(20px) scale(.97);
+    transition:transform .2s ease, border-color .3s ease, background .3s ease, box-shadow .3s ease, opacity .5s ease;
+  }
+  .name-card.in{opacity:1;transform:none;}
+  .name-card:active{transform:scale(.985);}
+  .name-card.open{border-color:rgba(var(--accent-rgb),.5);background:rgba(22,22,24,.7);box-shadow:0 10px 40px rgba(0,0,0,.5);}
+  .nc-main{flex:1 1 auto;min-width:0;}
+  .nc-name{
+    font-family:'Fraunces',serif;font-weight:380;font-size:25px;
+    letter-spacing:-.01em;line-height:1.05;
+  }
+  .nc-lens{
+    font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--soft);margin-top:4px;
+  }
+  .nc-story{
+    font-size:13.5px;line-height:1.5;color:var(--soft);
+    max-height:0;overflow:hidden;opacity:0;
+    transition:max-height .4s ease, opacity .35s ease, margin .4s ease;
+  }
+  .name-card.open .nc-story{max-height:90px;opacity:1;margin-top:10px;}
+  .nc-score{
+    flex:0 0 auto;font-family:'Space Mono',monospace;
+    width:46px;height:46px;border-radius:12px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border:1px solid rgba(var(--accent-rgb),.35);
+    color:var(--accent);background:rgba(var(--accent-rgb),.06);
+  }
+  .nc-score b{font-size:17px;font-weight:700;line-height:1;}
+  .nc-score span{font-size:7px;letter-spacing:.12em;color:var(--soft);margin-top:2px;}
+
+  .restart{
+    margin-top:16px;display:flex;justify-content:center;
+  }
+
+  /* intro */
+  #intro{
+    position:fixed;inset:0;z-index:8;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:32px;
+    background:radial-gradient(120% 80% at 50% 50%, rgba(8,8,9,.2), rgba(8,8,9,.7));
+    transition:opacity .7s ease;
+  }
+  #intro.gone{opacity:0;pointer-events:none;}
+  .intro-mark{
+    font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.34em;
+    text-transform:uppercase;color:var(--accent);margin-bottom:22px;
+  }
+  .intro-title{
+    font-family:'Fraunces',serif;font-weight:300;
+    font-size:clamp(40px,13vw,72px);line-height:.98;letter-spacing:-.02em;
+    margin-bottom:18px;
+  }
+  .intro-title em{font-style:italic;color:var(--accent);}
+  .intro-sub{
+    color:var(--soft);font-size:15px;line-height:1.55;max-width:330px;margin-bottom:34px;
+  }
+  .intro-btn{
+    pointer-events:auto;cursor:pointer;border:none;
+    background:var(--accent);color:#0a0a0a;font-family:'Inter';font-weight:600;
+    font-size:16px;padding:16px 34px;border-radius:100px;
+    box-shadow:0 10px 40px rgba(var(--accent-rgb),.3);
+    transition:transform .2s ease;
+  }
+  .intro-btn:active{transform:scale(.96);}
+
+  @media (min-width:560px){
+    #stage,#names{padding-bottom:48px;}
+    .prog-label{margin-left:6px;}
+  }
+</style>
+</head>
+<body>
+  <canvas id="corridor"></canvas>
+  <div id="vignette"></div>
+
+  <div id="progress">
+    <div class="prog-track">
+      <div class="prog-seg">
+        <span class="prog-dot" data-d="0"></span>
+        <span class="prog-line" data-l="0"></span>
+        <span class="prog-dot" data-d="1"></span>
+        <span class="prog-line" data-l="1"></span>
+        <span class="prog-dot" data-d="2"></span>
+        <span class="prog-line" data-l="2"></span>
+        <span class="prog-dot" data-d="3"></span>
+      </div>
+      <span class="prog-label" id="progLabel">The brief</span>
+    </div>
+  </div>
+
+  <!-- 3D corridor question UI -->
+  <div id="stage">
+    <!-- Q1 -->
+    <div class="panel" id="p1">
+      <div class="qkicker"><span class="num">1</span> The brief</div>
+      <div class="qtitle">What are you <em>building?</em></div>
+      <textarea class="field" id="brief" placeholder="Describe it in your own words — the thing, the people, the feeling it should carry…"></textarea>
+      <div class="actions">
+        <button class="btn btn-primary" id="b1" disabled>Enter the corridor <span class="btn-arrow">→</span></button>
+        <button class="btn btn-ghost" id="ex1">try an example</button>
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="panel" id="p2">
+      <div class="qkicker"><span class="num">2</span> The single feeling</div>
+      <div class="qtitle">Pick the <em>one</em> feeling it must carry.</div>
+      <div class="chips" id="chips"></div>
+      <div class="actions">
+        <button class="btn btn-primary" id="b2" disabled>Fly forward <span class="btn-arrow">→</span></button>
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="panel" id="p3">
+      <div class="qkicker"><span class="num">3</span> Your onlyness</div>
+      <div class="qtitle">Finish the <em>commitment.</em></div>
+      <div class="row">
+        <span class="only-pre">Only</span>
+        <input class="field only-field" id="only1" placeholder="who / what" autocomplete="off">
+        <input class="field only-field" id="only2" placeholder="does this" autocomplete="off">
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" id="b3" disabled>Arrive at the names <span class="btn-arrow">→</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- payoff -->
+  <div id="names">
+    <div class="names-inner">
+      <div class="names-head" id="namesHead">Four lenses · five candidates · tap to open</div>
+      <div class="name-list" id="nameList"></div>
+      <div class="restart">
+        <button class="btn btn-ghost" id="restart">↺ walk it again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- intro -->
+  <div id="intro">
+    <div class="intro-mark">The Naming Engine</div>
+    <div class="intro-title">The <em>Corridor</em></div>
+    <div class="intro-sub">Walk forward through three questions. A world forms around you as you answer — then the names arrive.</div>
+    <button class="intro-btn" id="begin">Begin the walk →</button>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- feelings ----------
+  const FEELINGS = [
+    {name:'Relief',     color:'#A8E0D8'},
+    {name:'Momentum',   color:'#3DE0FF'},
+    {name:'High-Status',color:'#C9A24C'},
+    {name:'Wonder',     color:'#9B6CF2'},
+    {name:'Rebellion',  color:'#C6F24E'},
+    {name:'Belonging',  color:'#E8A24C'},
+    {name:'Control',    color:'#9FB2C6'},
+  ];
+  const EXAMPLE = "a non-alcoholic aperitif for people who quit drinking but miss the ritual of a proper drink in the evening — about still feeling like you belong at the bar, premium and a little ceremonial";
+
+  const NAMES = [
+    {name:'Vesper',  lens:'TIME · MYTH',        story:'The evening star — the hour the ritual begins.', score:88},
+    {name:'Aperto',  lens:'LINGUISTIC · IT',    story:"'Open' — hidden inside aperitivo.", score:85},
+    {name:'Commons', lens:'PLACE · METAPHOR',   story:'The shared table everyone belongs at.', score:81},
+    {name:'Hearth',  lens:'METAPHOR',           story:'The warm center people gather around.', score:78},
+    {name:'Cohort',  lens:'IDENTITY',           story:'Your people — the ones you arrive with.', score:73},
+  ];
+
+  // ---------- canvas / 3D setup ----------
+  const cv = document.getElementById('corridor');
+  const ctx = cv.getContext('2d');
+  let W=0, H=0, DPR=1, FOCAL=600;
+
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio||1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = Math.floor(W*DPR); cv.height = Math.floor(H*DPR);
+    cv.style.width = W+'px'; cv.style.height = H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    FOCAL = 0.9*H;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // station depths in world Z
+  const STATIONS = [0, 1100, 2200, 3400]; // Q1, Q2, Q3, names
+  let camZ = -260;            // current camera position
+  let camTarget = STATIONS[0]-260; // we always sit a bit behind the active station
+
+  // accent color (drives canvas + css)
+  let accent = hexToRgb('#E8A24C');
+  let accentTarget = {...accent};
+
+  // ---------- world content ----------
+  // depth dots / streaking particles
+  const dots = [];
+  function seedDots(){
+    dots.length=0;
+    for(let i=0;i<260;i++){
+      dots.push({
+        x:(Math.random()-0.5)*2800,
+        y:(Math.random()-0.5)*2200,
+        z:camZ + 200 + Math.random()*4400,
+        r:0.7+Math.random()*2.0,
+        tw:Math.random()*Math.PI*2,
+        spd:0.2+Math.random()*0.5
+      });
+    }
+  }
+  seedDots();
+
+  // floating words extracted from the brief, attached to station 0's shell
+  let wordSprites = []; // {text,x,y,z,size,seed,bornAt,life}
+  // world-shell rings/material per station (blooms when leaving)
+  const shells = []; // {z,born,color,strength}
+
+  const STOP = new Set("a an the and or but for of to in on at with from into about you your i me my we our they them this that those these is are be it its as so but quit miss who what does still like little bit".split(/\s+/));
+
+  function extractWords(text){
+    const raw = (text||'').toLowerCase().replace(/[^a-z\s-]/g,' ').split(/\s+/).filter(Boolean);
+    const seen = new Set(); const out=[];
+    for(const w of raw){
+      if(w.length<4 || STOP.has(w) || seen.has(w)) continue;
+      seen.add(w); out.push(w);
+      if(out.length>=14) break;
+    }
+    if(out.length===0) return ['idea','build','world','name'];
+    return out;
+  }
+
+  // spawn word sprites around a given station z, drifting in the corridor
+  function spawnWords(words, baseZ){
+    const now = performance.now();
+    words.forEach((text,i)=>{
+      const ang = (i/words.length)*Math.PI*2 + Math.random()*0.6;
+      const rad = 380 + Math.random()*620;
+      wordSprites.push({
+        text,
+        x: Math.cos(ang)*rad,
+        y: Math.sin(ang)*rad*0.7 + (Math.random()-0.5)*200,
+        z: baseZ + (Math.random()-0.5)*900,
+        size: 26 + Math.random()*34,
+        seed: Math.random()*1000,
+        bornAt: now + i*70,
+        wob: 0.3+Math.random()*0.7
+      });
+    });
+  }
+
+  function bloomShell(z){
+    shells.push({z, born:performance.now(), color:{...accentTarget}});
+  }
+
+  // ---------- projection ----------
+  function project(x,y,z){
+    const dz = z - camZ;
+    if(dz <= 1) return null;
+    const s = FOCAL/dz;
+    return {
+      sx: W/2 + x*s,
+      sy: H*0.46 + y*s,
+      scale: s,
+      dz
+    };
+  }
+
+  // ---------- drawing ----------
+  function lerp(a,b,t){return a+(b-a)*t;}
+  function hexToRgb(h){
+    h=h.replace('#','');
+    return {r:parseInt(h.slice(0,2),16),g:parseInt(h.slice(2,4),16),b:parseInt(h.slice(4,6),16)};
+  }
+  function rgbStr(c,a){return 'rgba('+(c.r|0)+','+(c.g|0)+','+(c.b|0)+','+a+')';}
+
+  let last = performance.now();
+  function frame(now){
+    const dt = Math.min(40, now-last); last=now;
+    const k = dt/16.67;
+
+    // ease camera & accent
+    camZ += (camTarget - camZ) * Math.min(1, 0.045*k);
+    accent.r = lerp(accent.r, accentTarget.r, Math.min(1,0.06*k));
+    accent.g = lerp(accent.g, accentTarget.g, Math.min(1,0.06*k));
+    accent.b = lerp(accent.b, accentTarget.b, Math.min(1,0.06*k));
+
+    ctx.clearRect(0,0,W,H);
+
+    // background gradient floor/ceiling for depth tunnel feel
+    drawTunnelGuides();
+
+    // ----- depth dots (sorted far->near) -----
+    // recycle dots behind camera
+    for(const d of dots){
+      d.tw += 0.04*k;
+      if(d.z - camZ < 6){ // passed us; recycle ahead
+        d.z = camZ + 3800 + Math.random()*900;
+        d.x = (Math.random()-0.5)*2600;
+        d.y = (Math.random()-0.5)*2000;
+      }
+    }
+    const sortedDots = dots.slice().sort((a,b)=> (b.z) - (a.z));
+    const speed = camTarget - camZ;
+    for(const d of sortedDots){
+      const p = project(d.x,d.y,d.z);
+      if(!p) continue;
+      // cull anything too close so we never get giant bokeh blobs
+      if(p.dz < 120) continue;
+      const fade = Math.max(0, Math.min(1, (4200-p.dz)/4200));
+      const near = Math.max(0, Math.min(1,(900-p.dz)/900));
+      let r = d.r * p.scale;            // true perspective size, no bogus multiplier
+      r = Math.min(r, 3.2);             // hard cap — these are dust, not orbs
+      if(r<0.25) continue;
+      const tw = 0.5+0.5*Math.sin(d.tw);
+      const a = fade*(0.18+0.5*tw);
+      // streak: short trailing line for travel sense, scaled by camera speed + nearness
+      const streak = Math.min(60, Math.abs(speed)*0.12) * near;
+      if(streak>2){
+        const p2 = project(d.x,d.y,d.z+streak*6);
+        if(p2){
+          ctx.strokeStyle = rgbStr(near>0.4?accent:{r:244,g:241,b:234}, a*0.55);
+          ctx.lineWidth = Math.max(0.5, r*1.1);
+          ctx.lineCap='round';
+          ctx.beginPath();ctx.moveTo(p.sx,p.sy);ctx.lineTo(p2.sx,p2.sy);ctx.stroke();
+        }
+      }
+      ctx.fillStyle = near>0.45 ? rgbStr(accent,a) : 'rgba(244,241,234,'+(a*0.8)+')';
+      ctx.beginPath();ctx.arc(p.sx,p.sy,r,0,6.283);ctx.fill();
+    }
+
+    // ----- world-shells (blooming rings of material left behind) -----
+    for(let i=shells.length-1;i>=0;i--){
+      const sh = shells[i];
+      const age = (now - sh.born)/1000;
+      drawShell(sh, age);
+      if(sh.z - camZ < -200) shells.splice(i,1);
+    }
+
+    // ----- floating word sprites -----
+    // sort far->near
+    const sortedWords = wordSprites.slice().sort((a,b)=> b.z - a.z);
+    for(const ws of sortedWords){
+      if(now < ws.bornAt) continue;
+      const wob = Math.sin((now*0.001)*ws.wob + ws.seed);
+      const wob2 = Math.cos((now*0.0008)*ws.wob + ws.seed);
+      const p = project(ws.x + wob*30, ws.y + wob2*22, ws.z);
+      if(!p) continue;
+      const appear = Math.min(1, (now-ws.bornAt)/700);
+      const fade = Math.max(0, Math.min(1, (3600-p.dz)/3600));
+      const fontSize = ws.size*p.scale;
+      if(fontSize < 4 || fontSize > 240) continue;
+      const a = fade*appear*0.85;
+      if(a<0.02) continue;
+      ctx.save();
+      ctx.font = '400 '+fontSize.toFixed(1)+"px 'Fraunces', serif";
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      // glow for near words
+      const near = Math.max(0,Math.min(1,(900-p.dz)/900));
+      if(near>0.3){
+        ctx.shadowColor = rgbStr(accent, a*near*0.7);
+        ctx.shadowBlur = 18*near;
+      }
+      ctx.fillStyle = near>0.45 ? rgbStr(accent, a) : 'rgba(244,241,234,'+a+')';
+      ctx.fillText(ws.text, p.sx, p.sy);
+      ctx.restore();
+    }
+
+    // ----- station markers (faint gates at each station) -----
+    drawStationGate(STATIONS[0]);
+    drawStationGate(STATIONS[1]);
+    drawStationGate(STATIONS[2]);
+    drawNameGate(STATIONS[3]);
+
+    requestAnimationFrame(frame);
+  }
+
+  function drawTunnelGuides(){
+    // subtle perspective lines converging to vanishing point for corridor feel
+    const vp = {x:W/2, y:H*0.46};
+    ctx.save();
+    ctx.lineWidth=1;
+    const corners = [
+      {x:-1, y:-1},{x:1,y:-1},{x:1,y:1},{x:-1,y:1}
+    ];
+    for(const c of corners){
+      ctx.strokeStyle = rgbStr(accent, 0.04);
+      ctx.beginPath();
+      ctx.moveTo(vp.x + c.x*W*0.7, vp.y + c.y*H*0.7);
+      ctx.lineTo(vp.x + c.x*W*0.04, vp.y + c.y*H*0.04);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawShell(sh, age){
+    // expanding ring of dots/material at sh.z, blooming then receding
+    const p0 = project(0,0,sh.z);
+    if(!p0) return;
+    const grow = Math.min(1, age/1.0);
+    const baseR = 520*grow;
+    const count = 56;
+    const fade = Math.max(0, Math.min(1,(3800-p0.dz)/3800));
+    const intensity = Math.min(1, age*2) * fade;
+    ctx.save();
+    for(let i=0;i<count;i++){
+      const ang = (i/count)*Math.PI*2;
+      const rr = baseR*(0.65 + 0.35*Math.sin(age*1.5 + i*0.6));
+      const wx = Math.cos(ang)*rr;
+      const wy = Math.sin(ang)*rr*0.7;
+      const p = project(wx,wy,sh.z);
+      if(!p) continue;
+      const dotSize = Math.max(0.5, 2.4*p.scale);
+      const tw = 0.5+0.5*Math.sin(age*3 + i);
+      ctx.fillStyle = rgbStr(sh.color, intensity*0.5*tw);
+      ctx.beginPath();ctx.arc(p.sx,p.sy,dotSize,0,6.283);ctx.fill();
+    }
+    // faint ring outline
+    const pr = project(baseR,0,sh.z);
+    if(pr){
+      const rad = Math.abs(pr.sx - p0.sx);
+      const grad = ctx.createRadialGradient(p0.sx,p0.sy,rad*0.6,p0.sx,p0.sy,rad);
+      grad.addColorStop(0,'rgba(0,0,0,0)');
+      grad.addColorStop(1,rgbStr(sh.color, intensity*0.10));
+      ctx.fillStyle=grad;
+      ctx.beginPath();ctx.arc(p0.sx,p0.sy,rad,0,6.283);ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawStationGate(z){
+    const p0 = project(0,0,z);
+    if(!p0) return;
+    const dz = z-camZ;
+    if(dz<5) return;
+    const fade = Math.max(0, Math.min(1,(3600-dz)/3600)) * Math.max(0,Math.min(1,(dz-40)/300));
+    if(fade<=0.01) return;
+    // ring gate
+    const pr = project(640,0,z);
+    if(!pr) return;
+    const rad = Math.abs(pr.sx - p0.sx);
+    ctx.save();
+    ctx.strokeStyle = rgbStr(accent, 0.10*fade);
+    ctx.lineWidth = Math.max(1, 2*p0.scale*40);
+    ctx.beginPath();
+    ctx.ellipse(p0.sx,p0.sy,rad,rad*0.74,0,0,6.283);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawNameGate(z){
+    const p0 = project(0,0,z);
+    if(!p0) return;
+    const dz=z-camZ;
+    if(dz<5) return;
+    const fade = Math.max(0, Math.min(1,(3000-dz)/3000));
+    if(fade<=0.01) return;
+    const pr = project(720,0,z);
+    if(!pr) return;
+    const rad = Math.abs(pr.sx-p0.sx);
+    ctx.save();
+    const grad = ctx.createRadialGradient(p0.sx,p0.sy,0,p0.sx,p0.sy,rad);
+    grad.addColorStop(0, rgbStr(accent, 0.16*fade));
+    grad.addColorStop(0.5, rgbStr(accent, 0.05*fade));
+    grad.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=grad;
+    ctx.beginPath();ctx.arc(p0.sx,p0.sy,rad,0,6.283);ctx.fill();
+    // concentric pulse rings
+    for(let i=0;i<3;i++){
+      const t=((performance.now()*0.0003)+i/3)%1;
+      ctx.strokeStyle = rgbStr(accent, (1-t)*0.18*fade);
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.ellipse(p0.sx,p0.sy,rad*t,rad*t*0.74,0,0,6.283);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  requestAnimationFrame(frame);
+
+  // ---------- UI flow ----------
+  const stage = {
+    intro: document.getElementById('intro'),
+    p1: document.getElementById('p1'),
+    p2: document.getElementById('p2'),
+    p3: document.getElementById('p3'),
+    names: document.getElementById('names'),
+  };
+  const brief = document.getElementById('brief');
+  const b1 = document.getElementById('b1');
+  const b2 = document.getElementById('b2');
+  const b3 = document.getElementById('b3');
+  const only1 = document.getElementById('only1');
+  const only2 = document.getElementById('only2');
+  const progLabel = document.getElementById('progLabel');
+
+  let state = 'intro';
+  let chosenFeeling = null;
+
+  function setProgress(stepIndex, label){
+    document.querySelectorAll('.prog-dot').forEach((d,i)=>{
+      d.classList.toggle('active', i===stepIndex);
+      d.classList.toggle('done', i<stepIndex);
+    });
+    document.querySelectorAll('.prog-line').forEach((l,i)=>{
+      l.classList.toggle('done', i<stepIndex);
+    });
+    progLabel.textContent = label;
+  }
+
+  function showPanel(el){
+    el.classList.remove('leaving');
+    el.classList.add('show');
+  }
+  function leavePanel(el){
+    el.classList.remove('show');
+    el.classList.add('leaving');
+  }
+
+  function setAccent(hex){
+    const c = hexToRgb(hex);
+    accentTarget = {...c};
+    document.documentElement.style.setProperty('--accent', hex);
+    document.documentElement.style.setProperty('--accent-rgb', c.r+','+c.g+','+c.b);
+    // tweak vignette tint subtly
+    document.getElementById('vignette').style.background =
+      'radial-gradient(120% 90% at 50% 42%, rgba('+c.r+','+c.g+','+c.b+',0.04) 30%, rgba(0,0,0,.55) 78%, rgba(0,0,0,.88) 100%)';
+  }
+
+  // build chips
+  const chipsEl = document.getElementById('chips');
+  FEELINGS.forEach(f=>{
+    const c = document.createElement('button');
+    c.className='chip';
+    c.style.color = f.color;
+    c.innerHTML = '<span class="swatch" style="background:'+f.color+'"></span><span style="color:var(--ink)">'+f.name+'</span>';
+    c.addEventListener('click',()=>{
+      document.querySelectorAll('.chip').forEach(x=>x.classList.remove('sel'));
+      c.classList.add('sel');
+      chosenFeeling = f;
+      setAccent(f.color);
+      b2.disabled = false;
+      // immediate world response: re-tint existing words happens via accentTarget;
+      // add a little burst of the feeling color as fresh shell ahead
+      bloomShell(camZ + 700);
+    });
+    chipsEl.appendChild(c);
+  });
+
+  // intro begin
+  document.getElementById('begin').addEventListener('click',()=>{
+    stage.intro.classList.add('gone');
+    state='q1';
+    setProgress(0,'The brief');
+    camTarget = STATIONS[0]-260;
+    setTimeout(()=>{ showPanel(stage.p1); brief.focus({preventScroll:true}); }, 450);
+  });
+
+  // Q1
+  brief.addEventListener('input',()=>{ b1.disabled = brief.value.trim().length < 3; });
+  document.getElementById('ex1').addEventListener('click',()=>{
+    brief.value = EXAMPLE;
+    b1.disabled=false;
+    brief.dispatchEvent(new Event('input'));
+    // preview a couple words drifting in immediately
+  });
+
+  b1.addEventListener('click',()=>{
+    if(b1.disabled) return;
+    const words = extractWords(brief.value);
+    // spawn the brief words around station 0, they recede as we fly forward
+    spawnWords(words, STATIONS[0]+200);
+    bloomShell(STATIONS[0]+100);
+    leavePanel(stage.p1);
+    // fly to station 1
+    camTarget = STATIONS[1]-260;
+    state='q2';
+    setProgress(1,'The feeling');
+    setTimeout(()=> showPanel(stage.p2), 520);
+  });
+
+  // Q2
+  b2.addEventListener('click',()=>{
+    if(b2.disabled) return;
+    // bloom feeling-colored shell at station 1, recede behind
+    bloomShell(STATIONS[1]+120);
+    // re-seed a few feeling words
+    spawnWords([chosenFeeling.name.toLowerCase(), 'ritual','evening','belong'], STATIONS[1]+260);
+    leavePanel(stage.p2);
+    camTarget = STATIONS[2]-260;
+    state='q3';
+    setProgress(2,'Your onlyness');
+    setTimeout(()=>{ showPanel(stage.p3); only1.focus({preventScroll:true}); }, 520);
+  });
+
+  function checkOnly(){
+    b3.disabled = !(only1.value.trim() && only2.value.trim());
+  }
+  only1.addEventListener('input',checkOnly);
+  only2.addEventListener('input',checkOnly);
+
+  b3.addEventListener('click',()=>{
+    if(b3.disabled) return;
+    // climax: spawn the onlyness words large, bloom, then arrive at names
+    spawnWords([only1.value.trim().toLowerCase(), only2.value.trim().toLowerCase(), 'only'], STATIONS[2]+260);
+    bloomShell(STATIONS[2]+140);
+    leavePanel(stage.p3);
+    camTarget = STATIONS[3]-300;
+    state='names';
+    setProgress(3,'The names');
+    setTimeout(revealNames, 700);
+  });
+
+  // ---------- names payoff ----------
+  const nameList = document.getElementById('nameList');
+  function revealNames(){
+    nameList.innerHTML='';
+    stage.names.classList.add('show');
+    document.getElementById('namesHead').classList.add('in');
+    NAMES.forEach((n,i)=>{
+      const card = document.createElement('div');
+      card.className='name-card';
+      card.innerHTML =
+        '<div class="nc-main">'+
+          '<div class="nc-name">'+n.name+'</div>'+
+          '<div class="nc-lens">'+n.lens+'</div>'+
+          '<div class="nc-story">'+n.story+'</div>'+
+        '</div>'+
+        '<div class="nc-score"><b>'+n.score+'</b><span>SCORE</span></div>';
+      card.addEventListener('click',()=>{
+        const wasOpen = card.classList.contains('open');
+        document.querySelectorAll('.name-card').forEach(c=>c.classList.remove('open'));
+        if(!wasOpen) card.classList.add('open');
+      });
+      nameList.appendChild(card);
+      setTimeout(()=> card.classList.add('in'), 120 + i*110);
+    });
+    // float the name words into the deepest station too
+    spawnWords(NAMES.map(n=>n.name.toLowerCase()), STATIONS[3]+80);
+  }
+
+  // restart
+  document.getElementById('restart').addEventListener('click',()=>{
+    // reset everything
+    stage.names.classList.remove('show');
+    document.getElementById('namesHead').classList.remove('in');
+    [stage.p1,stage.p2,stage.p3].forEach(p=>{p.classList.remove('show','leaving');});
+    brief.value=''; b1.disabled=true;
+    only1.value=''; only2.value=''; b3.disabled=true;
+    b2.disabled=true; chosenFeeling=null;
+    document.querySelectorAll('.chip').forEach(x=>x.classList.remove('sel'));
+    wordSprites.length=0; shells.length=0;
+    setAccent('#E8A24C');
+    camTarget = STATIONS[0]-260; camZ = -260;
+    seedDots();
+    state='q1';
+    setProgress(0,'The brief');
+    setTimeout(()=>{ showPanel(stage.p1); }, 400);
+  });
+
+  // keyboard convenience on desktop
+  document.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter' && (e.metaKey||e.ctrlKey)){
+      if(state==='q1' && !b1.disabled) b1.click();
+      else if(state==='q3' && !b3.disabled) b3.click();
+    }
+  });
+
+})();
+</script>
+</body>
+</html>

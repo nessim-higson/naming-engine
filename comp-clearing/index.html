@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Clearing · naming probe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#080809;
+    --ink:#F4F1EA;
+    --soft:#8a867d;
+    --hair:rgba(255,255,255,.11);
+    --accent:#E8A24C;
+    --accent-soft:rgba(232,162,76,.16);
+    --accent-rgb:232,162,76;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    overflow:hidden;
+    position:fixed;
+    inset:0;
+    width:100%;
+    -webkit-font-smoothing:antialiased;
+  }
+  canvas#world{
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
+    display:block;
+    z-index:0;
+  }
+  .vignette{
+    position:fixed;
+    inset:0;
+    z-index:1;
+    pointer-events:none;
+    background:radial-gradient(120% 90% at 50% 42%, transparent 38%, rgba(4,4,6,.55) 78%, rgba(2,2,3,.92) 100%);
+    transition:opacity 1.2s ease;
+  }
+  .stage{
+    position:fixed;
+    inset:0;
+    z-index:2;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:
+      calc(env(safe-area-inset-top) + 28px)
+      calc(env(safe-area-inset-right) + 22px)
+      calc(env(safe-area-inset-bottom) + 26px)
+      calc(env(safe-area-inset-left) + 22px);
+  }
+
+  /* progress */
+  .progress{
+    position:fixed;
+    top:calc(env(safe-area-inset-top) + 18px);
+    left:50%;
+    transform:translateX(-50%);
+    z-index:4;
+    display:flex;
+    gap:9px;
+    align-items:center;
+  }
+  .progress .dot{
+    width:7px;height:7px;border-radius:50%;
+    background:rgba(255,255,255,.16);
+    transition:background .6s ease, box-shadow .6s ease, transform .6s ease;
+  }
+  .progress .dot.on{
+    background:var(--accent);
+    box-shadow:0 0 14px rgba(var(--accent-rgb),.9);
+    transform:scale(1.15);
+  }
+  .kicker{
+    font-family:'Space Mono',monospace;
+    font-size:11px;
+    letter-spacing:.28em;
+    text-transform:uppercase;
+    color:var(--soft);
+    margin-bottom:18px;
+    opacity:0;
+    transform:translateY(8px);
+  }
+
+  .panel{
+    width:100%;
+    max-width:540px;
+    text-align:center;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+  }
+  .panel.active{display:flex}
+
+  .q{
+    font-family:'Fraunces',serif;
+    font-weight:340;
+    font-size:clamp(30px,8.4vw,52px);
+    line-height:1.04;
+    letter-spacing:-.01em;
+    margin-bottom:8px;
+    opacity:0;
+    transform:translateY(14px);
+    filter:blur(7px);
+  }
+  .q .em{font-style:italic;color:var(--accent);transition:color .8s ease}
+  .sub{
+    color:var(--soft);
+    font-size:14px;
+    line-height:1.5;
+    max-width:420px;
+    margin-bottom:26px;
+    opacity:0;
+    transform:translateY(10px);
+  }
+
+  /* anim helper */
+  .rise{animation:rise .9s cubic-bezier(.2,.7,.2,1) forwards}
+  .rise2{animation:rise .9s .12s cubic-bezier(.2,.7,.2,1) forwards}
+  .rise3{animation:rise .9s .22s cubic-bezier(.2,.7,.2,1) forwards}
+  .rise4{animation:rise .9s .34s cubic-bezier(.2,.7,.2,1) forwards}
+  @keyframes rise{to{opacity:1;transform:translateY(0);filter:blur(0)}}
+
+  /* text input */
+  .field{
+    width:100%;
+    max-width:460px;
+    opacity:0;
+    transform:translateY(12px);
+  }
+  textarea.in, input.in{
+    width:100%;
+    background:rgba(255,255,255,.025);
+    border:1px solid var(--hair);
+    border-radius:16px;
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:16px;
+    line-height:1.5;
+    padding:16px 18px;
+    resize:none;
+    outline:none;
+    transition:border-color .35s ease, box-shadow .35s ease, background .35s ease;
+  }
+  textarea.in{min-height:120px}
+  textarea.in:focus, input.in:focus{
+    border-color:rgba(var(--accent-rgb),.7);
+    box-shadow:0 0 0 4px var(--accent-soft);
+    background:rgba(255,255,255,.04);
+  }
+  textarea.in::placeholder, input.in::placeholder{color:rgba(138,134,125,.7)}
+
+  .exlink{
+    display:inline-block;
+    margin-top:14px;
+    font-family:'Space Mono',monospace;
+    font-size:11.5px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--soft);
+    border-bottom:1px dashed rgba(255,255,255,.22);
+    padding-bottom:2px;
+    cursor:pointer;
+    transition:color .3s ease,border-color .3s ease;
+    background:none;border-top:none;border-left:none;border-right:none;
+  }
+  .exlink:hover{color:var(--accent);border-color:rgba(var(--accent-rgb),.6)}
+
+  /* onlyness two-input */
+  .only-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:10px;
+    width:100%;
+    max-width:480px;
+    opacity:0;
+    transform:translateY(12px);
+  }
+  .only-word{
+    font-family:'Fraunces',serif;
+    font-style:italic;
+    font-size:clamp(26px,7vw,40px);
+    color:var(--accent);
+    transition:color .8s ease;
+  }
+  input.only-in{
+    flex:1 1 130px;
+    min-width:120px;
+    text-align:center;
+    background:transparent;
+    border:none;
+    border-bottom:1.5px solid rgba(var(--accent-rgb),.45);
+    border-radius:0;
+    color:var(--ink);
+    font-family:'Fraunces',serif;
+    font-size:clamp(26px,7vw,40px);
+    padding:4px 6px 8px;
+    outline:none;
+    transition:border-color .35s ease;
+  }
+  input.only-in:focus{border-color:var(--accent)}
+  input.only-in::placeholder{color:rgba(138,134,125,.55);font-style:italic}
+
+  /* feeling chips */
+  .chips{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:10px;
+    width:100%;
+    max-width:480px;
+    opacity:0;
+    transform:translateY(12px);
+  }
+  .chip{
+    --c:#888;
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+    background:rgba(255,255,255,.02);
+    border:1px solid var(--hair);
+    border-radius:100px;
+    color:var(--ink);
+    font-size:15px;
+    font-weight:400;
+    padding:11px 17px;
+    cursor:pointer;
+    min-height:46px;
+    transition:transform .25s ease, border-color .3s ease, background .3s ease, box-shadow .3s ease;
+  }
+  .chip .swatch{
+    width:11px;height:11px;border-radius:50%;
+    background:var(--c);
+    box-shadow:0 0 10px var(--c);
+    flex:none;
+  }
+  .chip:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.28)}
+  .chip:active{transform:translateY(0)}
+  .chip.sel{
+    border-color:var(--c);
+    background:color-mix(in srgb, var(--c) 16%, transparent);
+    box-shadow:0 0 0 1px var(--c), 0 8px 28px -8px var(--c);
+  }
+
+  /* CTA */
+  .cta{
+    margin-top:30px;
+    opacity:0;
+    transform:translateY(12px);
+  }
+  .btn{
+    appearance:none;
+    border:none;
+    cursor:pointer;
+    font-family:'Space Mono',monospace;
+    font-size:12.5px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:#0b0b0c;
+    background:var(--accent);
+    padding:15px 30px;
+    border-radius:100px;
+    min-height:50px;
+    transition:transform .25s ease, box-shadow .3s ease, opacity .3s ease, background .6s ease;
+    box-shadow:0 10px 30px -8px rgba(var(--accent-rgb),.6);
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 16px 38px -8px rgba(var(--accent-rgb),.7)}
+  .btn:active{transform:translateY(0)}
+  .btn[disabled]{opacity:.32;cursor:default;box-shadow:none;transform:none}
+
+  /* ---- PAYOFF ---- */
+  #payoff{
+    max-width:680px;
+  }
+  .payoff-head{
+    opacity:0;transform:translateY(14px);filter:blur(7px);
+  }
+  .payoff-eyebrow{
+    font-family:'Space Mono',monospace;
+    font-size:11px;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:14px;transition:color .8s ease;
+  }
+  .payoff-title{
+    font-family:'Fraunces',serif;
+    font-weight:330;
+    font-size:clamp(26px,7vw,42px);
+    line-height:1.08;
+    margin-bottom:6px;
+  }
+  .payoff-sub{color:var(--soft);font-size:13.5px;margin-bottom:24px;line-height:1.5}
+  .payoff-sub b{color:var(--ink);font-weight:500}
+
+  .names{
+    display:flex;flex-direction:column;gap:11px;width:100%;max-width:460px;margin:0 auto;
+  }
+  .name{
+    opacity:0;transform:translateY(16px);
+    text-align:left;
+    background:rgba(255,255,255,.025);
+    border:1px solid var(--hair);
+    border-radius:16px;
+    padding:15px 17px;
+    cursor:pointer;
+    transition:transform .28s cubic-bezier(.2,.7,.2,1), border-color .3s ease, background .3s ease, box-shadow .3s ease;
+  }
+  .name:hover{
+    transform:translateY(-2px);
+    border-color:rgba(var(--accent-rgb),.6);
+    background:rgba(255,255,255,.045);
+    box-shadow:0 14px 34px -16px rgba(var(--accent-rgb),.7);
+  }
+  .name.open{
+    border-color:rgba(var(--accent-rgb),.7);
+    background:color-mix(in srgb, var(--accent) 9%, rgba(255,255,255,.02));
+  }
+  .name-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+  .name-word{
+    font-family:'Fraunces',serif;font-weight:380;font-size:26px;line-height:1;
+  }
+  .name-score{
+    font-family:'Space Mono',monospace;font-size:13px;color:var(--accent);
+    flex:none;transition:color .8s ease;
+  }
+  .name-lens{
+    font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--soft);margin-top:7px;
+  }
+  .name-story{
+    max-height:0;overflow:hidden;
+    transition:max-height .5s cubic-bezier(.4,0,.2,1), margin-top .5s ease, opacity .4s ease;
+    opacity:0;margin-top:0;
+  }
+  .name.open .name-story{
+    max-height:120px;opacity:1;margin-top:11px;
+  }
+  .name-story p{
+    font-family:'Fraunces',serif;font-style:italic;font-weight:300;
+    font-size:16px;line-height:1.45;color:var(--ink);
+    padding-top:11px;border-top:1px solid var(--hair);
+  }
+  .restart{
+    margin:26px auto 0;
+    display:block;
+    opacity:0;
+    background:none;border:none;
+    font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--soft);cursor:pointer;transition:color .3s ease;
+  }
+  .restart:hover{color:var(--accent)}
+
+  @media (max-width:760px){
+    .q{font-size:clamp(28px,9vw,40px)}
+    .name-word{font-size:23px}
+    .chip{font-size:14px;padding:10px 15px}
+  }
+  @media (max-height:680px){
+    .stage{justify-content:flex-start;padding-top:calc(env(safe-area-inset-top) + 64px)}
+    .q{font-size:clamp(26px,7vw,38px)}
+    textarea.in{min-height:96px}
+  }
+</style>
+</head>
+<body>
+<canvas id="world"></canvas>
+<div class="vignette" id="vignette"></div>
+
+<div class="progress" id="progress">
+  <span class="dot" data-i="0"></span>
+  <span class="dot" data-i="1"></span>
+  <span class="dot" data-i="2"></span>
+</div>
+
+<div class="stage">
+
+  <!-- Q1 -->
+  <section class="panel" id="p1">
+    <div class="kicker">The Clearing · 01</div>
+    <h1 class="q">What are you <span class="em">building?</span></h1>
+    <p class="sub">Speak it into the fog. A world will begin to form around the shape of it.</p>
+    <div class="field">
+      <textarea class="in" id="q1in" placeholder="Describe it in your own words…" rows="3"></textarea>
+      <div style="text-align:center">
+        <button class="exlink" id="ex1">try an example</button>
+      </div>
+    </div>
+    <div class="cta"><button class="btn" id="next1" disabled>Continue</button></div>
+  </section>
+
+  <!-- Q2 -->
+  <section class="panel" id="p2">
+    <div class="kicker">The Clearing · 02</div>
+    <h1 class="q">The single <span class="em">feeling</span></h1>
+    <p class="sub">One. The one the work leaves behind. Choosing it floods the clearing with its colour.</p>
+    <div class="chips" id="chips"></div>
+    <div class="cta"><button class="btn" id="next2" disabled>Continue</button></div>
+  </section>
+
+  <!-- Q3 -->
+  <section class="panel" id="p3">
+    <div class="kicker">The Clearing · 03</div>
+    <h1 class="q">Your <span class="em">onlyness</span></h1>
+    <p class="sub">The thing only you can promise. Finish the line — this is the climax.</p>
+    <div class="only-row">
+      <span class="only-word">Only</span>
+      <input class="only-in" id="only1" placeholder="we" autocomplete="off" spellcheck="false">
+      <input class="only-in" id="only2" placeholder="belong" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="cta"><button class="btn" id="next3" disabled>Form the world</button></div>
+  </section>
+
+  <!-- PAYOFF -->
+  <section class="panel" id="payoff">
+    <div class="payoff-head">
+      <div class="payoff-eyebrow" id="poEyebrow">The fog has cleared</div>
+      <h1 class="payoff-title">Names standing<br>in your clearing</h1>
+      <p class="payoff-sub">Five candidates, each found through a different lens. <b>Tap one</b> to hear its story.</p>
+    </div>
+    <div class="names" id="names"></div>
+    <button class="restart" id="restart">↺ walk it again</button>
+  </section>
+
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ---------------- state ---------------- */
+  const FEELINGS = [
+    {k:'Relief',     c:'#A8E0D8'},
+    {k:'Momentum',   c:'#3DE0FF'},
+    {k:'High-Status',c:'#C9A24C'},
+    {k:'Wonder',     c:'#9B6CF2'},
+    {k:'Rebellion',  c:'#C6F24E'},
+    {k:'Belonging',  c:'#E8A24C'},
+    {k:'Control',    c:'#9FB2C6'},
+  ];
+  const NAMES = [
+    {w:'Vesper',  lens:'TIME·MYTH',         story:'The evening star — the hour the ritual begins.', score:88},
+    {w:'Aperto',  lens:'LINGUISTIC·IT',     story:"'Open' — hidden inside aperitivo.",             score:85},
+    {w:'Commons', lens:'PLACE·METAPHOR',    story:'The shared table everyone belongs at.',         score:81},
+    {w:'Hearth',  lens:'METAPHOR',          story:'The warm center people gather around.',          score:78},
+    {w:'Cohort',  lens:'IDENTITY',          story:'Your people — the ones you arrive with.',        score:73},
+  ];
+
+  // clarity 0 -> murk, 1 -> fully formed. Rises with each answer.
+  const state = {
+    step: 0,            // 0..2 questions, 3 = payoff
+    clarity: 0,         // target clarity
+    accent: '#E8A24C',  // current world accent
+    accentRGB: [232,162,76],
+  };
+
+  /* ---------------- color util ---------------- */
+  function hexToRgb(h){
+    h = h.replace('#','');
+    return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];
+  }
+  function setAccent(hex){
+    state.accent = hex;
+    const rgb = hexToRgb(hex);
+    state.accentRGB = rgb;
+    const r = document.documentElement.style;
+    r.setProperty('--accent', hex);
+    r.setProperty('--accent-rgb', rgb.join(','));
+    r.setProperty('--accent-soft', `rgba(${rgb.join(',')},.16)`);
+  }
+
+  /* ---------------- CANVAS: fog -> form ---------------- */
+  const canvas = document.getElementById('world');
+  const ctx = canvas.getContext('2d', {alpha:false});
+  let W=0,H=0,DPR=1,CX=0,CY=0;
+  const mobile = () => innerWidth <= 760;
+
+  let particles = [];
+  function buildParticles(){
+    const count = mobile() ? 130 : 240;
+    particles = [];
+    for(let i=0;i<count;i++){
+      const a = Math.random()*Math.PI*2;
+      const rr = Math.pow(Math.random(),.6); // bias toward center fill
+      particles.push({
+        a, rr,
+        // home (formed) target: organized rings
+        ring: i % (mobile()?5:7),
+        ang: a,
+        // current pos in murk: scattered, drifting
+        x: Math.random(), y: Math.random(),
+        vx:(Math.random()-.5)*.0006,
+        vy:(Math.random()-.5)*.0006,
+        size: .5 + Math.random()*1.7,
+        twk: Math.random()*Math.PI*2,
+        tws: .6+Math.random()*1.2,
+        depth: Math.random(), // for parallax-ish brightness
+      });
+    }
+  }
+
+  function resize(){
+    DPR = Math.min(devicePixelRatio||1, 2);
+    W = innerWidth; H = innerHeight;
+    canvas.width = W*DPR; canvas.height = H*DPR;
+    canvas.style.width = W+'px'; canvas.style.height = H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    CX = W/2; CY = H*0.46;
+    if(!particles.length) buildParticles();
+  }
+
+  // eased current clarity (lerps toward target)
+  let cl = 0;
+  let t = 0;
+
+  function frame(){
+    t += 0.016;
+    cl += (state.clarity - cl) * 0.025;
+    const [ar,ag,ab] = state.accentRGB;
+
+    // ---- background: murk that lifts as clarity rises ----
+    const formed = cl;
+    // base fill
+    ctx.fillStyle = '#080809';
+    ctx.fillRect(0,0,W,H);
+
+    // murk haze layer (heavier when unclear)
+    const haze = (1-formed);
+    if(haze > 0.01){
+      const g = ctx.createRadialGradient(CX,CY,0, CX,CY, Math.max(W,H)*0.85);
+      g.addColorStop(0, `rgba(40,42,48,${0.22*haze})`);
+      g.addColorStop(0.5, `rgba(20,21,26,${0.16*haze})`);
+      g.addColorStop(1, `rgba(8,8,9,0)`);
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,W,H);
+    }
+
+    // ---- the formed "world": a luminous clearing glow ----
+    if(formed > 0.02){
+      const glowR = Math.max(W,H)*(0.30 + 0.22*formed);
+      const g2 = ctx.createRadialGradient(CX,CY,0, CX,CY, glowR);
+      const ga = 0.05 + 0.22*formed;
+      g2.addColorStop(0, `rgba(${ar},${ag},${ab},${ga})`);
+      g2.addColorStop(0.45, `rgba(${ar},${ag},${ab},${ga*0.4})`);
+      g2.addColorStop(1, `rgba(${ar},${ag},${ab},0)`);
+      ctx.globalCompositeOperation = 'screen';
+      ctx.fillStyle = g2;
+      ctx.fillRect(0,0,W,H);
+
+      // structure: concentric horizon arcs emerge as it forms
+      if(formed > 0.25){
+        ctx.lineWidth = 1;
+        const rings = mobile()?3:4;
+        for(let i=1;i<=rings;i++){
+          const rad = (0.16 + i*0.13) * Math.min(W,H) * (0.7+0.3*formed);
+          const aA = (formed-0.25)/0.75 * 0.10 * (1 - i/(rings+1));
+          ctx.strokeStyle = `rgba(${ar},${ag},${ab},${Math.max(0,aA)})`;
+          ctx.beginPath();
+          ctx.ellipse(CX, CY, rad, rad*0.42, 0, 0, Math.PI*2);
+          ctx.stroke();
+        }
+      }
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    // ---- particles: drift in murk, settle into rings as clarity rises ----
+    ctx.globalCompositeOperation = 'lighter';
+    const minDim = Math.min(W,H);
+    for(const p of particles){
+      // murk position (free drift)
+      p.x += p.vx; p.y += p.vy;
+      if(p.x<-.05) p.x=1.05; if(p.x>1.05) p.x=-.05;
+      if(p.y<-.05) p.y=1.05; if(p.y>1.05) p.y=-.05;
+      const mx = p.x*W, my = p.y*H;
+
+      // formed position: organized ring around center, slow orbit
+      const ringR = (0.10 + p.ring*0.085) * minDim;
+      const orbit = p.ang + t*(0.05 + p.ring*0.012) + Math.sin(t*0.3+p.twk)*0.05;
+      const fx = CX + Math.cos(orbit)*ringR;
+      const fy = CY + Math.sin(orbit)*ringR*0.46;
+
+      // blend by clarity (ease)
+      const e = formed*formed*(3-2*formed);
+      const x = mx + (fx-mx)*e;
+      const y = my + (fy-my)*e;
+
+      const tw = 0.55 + 0.45*Math.sin(t*p.tws + p.twk);
+      // murk particles dim grey; formed particles take accent
+      const baseA = (0.10 + 0.16*p.depth) * (0.4 + 0.6*tw);
+      // color lerp grey -> accent
+      const mr = 150, mg = 150, mb = 158;
+      const rr = mr + (ar-mr)*formed;
+      const gg = mg + (ag-mg)*formed;
+      const bb = mb + (ab-mb)*formed;
+      const sz = p.size * (0.85 + 0.6*formed) * (mobile()?0.9:1);
+      const alpha = baseA * (0.5 + 0.7*formed) * (1 - 0.25*haze*p.depth);
+
+      ctx.fillStyle = `rgba(${rr|0},${gg|0},${bb|0},${alpha})`;
+      ctx.beginPath();
+      ctx.arc(x,y,sz,0,Math.PI*2);
+      ctx.fill();
+
+      // glint on the brightest formed particles
+      if(formed>0.5 && p.depth>0.78){
+        ctx.fillStyle = `rgba(${ar},${ag},${ab},${0.5*(formed-0.5)*tw})`;
+        ctx.beginPath();
+        ctx.arc(x,y,sz*2.2,0,Math.PI*2);
+        ctx.fill();
+      }
+    }
+    ctx.globalCompositeOperation = 'source-over';
+
+    // vignette softens as world forms
+    document.getElementById('vignette').style.opacity = (0.55 + 0.45*(1-formed)).toFixed(3);
+
+    requestAnimationFrame(frame);
+  }
+
+  /* ---------------- panel flow ---------------- */
+  const panels = ['p1','p2','p3','payoff'];
+  function show(id){
+    panels.forEach(pid=>{
+      const el = document.getElementById(pid);
+      el.classList.toggle('active', pid===id);
+    });
+    // animate contents in
+    requestAnimationFrame(()=>animateIn(id));
+  }
+  function animateIn(id){
+    const el = document.getElementById(id);
+    const k = el.querySelector('.kicker');     if(k){ k.classList.remove('rise'); void k.offsetWidth; k.classList.add('rise'); }
+    const q = el.querySelector('.q,.payoff-head'); if(q){ q.classList.remove('rise2'); void q.offsetWidth; q.classList.add('rise2'); }
+    const s = el.querySelector('.sub');        if(s){ s.classList.remove('rise2'); void s.offsetWidth; s.classList.add('rise2'); }
+    const f = el.querySelector('.field,.chips,.only-row'); if(f){ f.classList.remove('rise3'); void f.offsetWidth; f.classList.add('rise3'); }
+    const c = el.querySelector('.cta');        if(c){ c.classList.remove('rise4'); void c.offsetWidth; c.classList.add('rise4'); }
+  }
+  function markDots(){
+    document.querySelectorAll('.progress .dot').forEach((d,i)=>{
+      d.classList.toggle('on', i <= Math.min(state.step,2) && state.step<3 ? i<=state.step : (state.step>=3 && i<3));
+    });
+  }
+  // dots: lit = number of answers committed
+  function litDots(n){
+    document.querySelectorAll('.progress .dot').forEach((d,i)=> d.classList.toggle('on', i<n));
+  }
+
+  /* ---------------- Q1 ---------------- */
+  const q1in = document.getElementById('q1in');
+  const next1 = document.getElementById('next1');
+  const EX = "a non-alcoholic aperitif for people who quit drinking but miss the ritual of a proper drink in the evening — about still feeling like you belong at the bar, premium and a little ceremonial";
+
+  q1in.addEventListener('input', ()=>{
+    next1.disabled = q1in.value.trim().length < 3;
+    // typing already starts lifting the murk a touch
+    state.clarity = Math.min(0.12, q1in.value.trim().length/240);
+  });
+  document.getElementById('ex1').addEventListener('click', ()=>{
+    q1in.value = EX;
+    q1in.dispatchEvent(new Event('input'));
+    q1in.focus();
+  });
+  next1.addEventListener('click', ()=>{
+    state.step = 1;
+    state.clarity = 0.34;       // first clearing
+    litDots(1);
+    show('p2');
+  });
+
+  /* ---------------- Q2 chips ---------------- */
+  const chipsEl = document.getElementById('chips');
+  const next2 = document.getElementById('next2');
+  let chosenFeeling = null;
+  FEELINGS.forEach(f=>{
+    const b = document.createElement('button');
+    b.className='chip';
+    b.style.setProperty('--c', f.c);
+    b.innerHTML = `<span class="swatch"></span>${f.k}`;
+    b.addEventListener('click', ()=>{
+      chosenFeeling = f;
+      chipsEl.querySelectorAll('.chip').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel');
+      setAccent(f.c);            // flood the world with colour
+      state.clarity = 0.60;      // colour flood deepens the form
+      next2.disabled = false;
+    });
+    chipsEl.appendChild(b);
+  });
+  next2.addEventListener('click', ()=>{
+    state.step = 2;
+    state.clarity = 0.66;
+    litDots(2);
+    show('p3');
+  });
+
+  /* ---------------- Q3 onlyness ---------------- */
+  const only1 = document.getElementById('only1');
+  const only2 = document.getElementById('only2');
+  const next3 = document.getElementById('next3');
+  function checkOnly(){
+    const ok = only1.value.trim() && only2.value.trim();
+    next3.disabled = !ok;
+    // gradual clearing as they fill the climax
+    const filled = (only1.value.trim()?1:0)+(only2.value.trim()?1:0);
+    state.clarity = 0.66 + filled*0.06;
+  }
+  only1.addEventListener('input', checkOnly);
+  only2.addEventListener('input', checkOnly);
+  next3.addEventListener('click', ()=>{
+    state.step = 3;
+    state.clarity = 1.0;        // FULL clearing — world fully formed
+    litDots(3);
+    buildPayoff();
+    show('payoff');
+  });
+
+  /* ---------------- PAYOFF ---------------- */
+  const namesEl = document.getElementById('names');
+  let payoffBuilt = false;
+  function buildPayoff(){
+    if(payoffBuilt){ // still re-trigger entrance
+      stagger();
+      return;
+    }
+    payoffBuilt = true;
+    NAMES.forEach((n,i)=>{
+      const card = document.createElement('div');
+      card.className='name';
+      card.innerHTML = `
+        <div class="name-top">
+          <span class="name-word">${n.w}</span>
+          <span class="name-score">${n.score}</span>
+        </div>
+        <div class="name-lens">${n.lens}</div>
+        <div class="name-story"><p>${n.story}</p></div>`;
+      card.addEventListener('click', ()=>{
+        const wasOpen = card.classList.contains('open');
+        namesEl.querySelectorAll('.name').forEach(c=>c.classList.remove('open'));
+        if(!wasOpen) card.classList.add('open');
+      });
+      namesEl.appendChild(card);
+    });
+    stagger();
+  }
+  function stagger(){
+    const head = document.querySelector('#payoff .payoff-head');
+    head.classList.remove('rise2'); void head.offsetWidth; head.classList.add('rise2');
+    namesEl.querySelectorAll('.name').forEach((c,i)=>{
+      c.style.animation='none'; void c.offsetWidth;
+      c.style.animation = `rise .8s ${0.25 + i*0.11}s cubic-bezier(.2,.7,.2,1) forwards`;
+    });
+    const r = document.getElementById('restart');
+    r.style.animation='none'; void r.offsetWidth;
+    r.style.animation = `rise .8s ${0.25 + NAMES.length*0.11 + 0.1}s ease forwards`;
+  }
+
+  document.getElementById('restart').addEventListener('click', ()=>{
+    state.step = 0;
+    state.clarity = 0;
+    chosenFeeling = null;
+    setAccent('#E8A24C');
+    q1in.value=''; next1.disabled=true;
+    chipsEl.querySelectorAll('.chip').forEach(x=>x.classList.remove('sel')); next2.disabled=true;
+    only1.value=''; only2.value=''; next3.disabled=true;
+    litDots(0);
+    show('p1');
+  });
+
+  /* ---------------- boot ---------------- */
+  addEventListener('resize', resize, {passive:true});
+  resize();
+  requestAnimationFrame(frame);
+  show('p1');
+
+})();
+</script>
+</body>
+</html>
