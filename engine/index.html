@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
+<title>Naming Engine — live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0..1,300..500&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--fd:"Fraunces",Georgia,serif;--fu:"Inter",system-ui,sans-serif;--fm:"Space Mono",monospace;
+  --ink:#F4F1EA;--soft:#8c887e;--dim:#56524a;--line:#ffffff1c;--accent:#E8A24C;--ease:cubic-bezier(.22,.61,.36,1)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#070708;overscroll-behavior:none}
+body{font-family:var(--fu);color:var(--ink);-webkit-font-smoothing:antialiased;touch-action:manipulation}
+canvas{position:fixed;inset:0;z-index:0}
+.vig{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(130% 120% at 50% 42%,transparent 34%,#04040699 80%,#040406 100%)}
+.bar{position:fixed;top:0;left:0;right:0;z-index:8;display:flex;justify-content:space-between;align-items:center;padding:env(safe-area-inset-top,16px) 22px 0;height:60px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:13.5px;text-shadow:0 1px 18px #000a}
+.brand .mk{width:17px;height:17px;border:1.5px solid var(--ink);border-radius:50%;position:relative}
+.brand .mk::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--accent)}
+.brand small{color:var(--soft);font-weight:400}
+.tools{display:flex;gap:8px;align-items:center}
+.tbtn{font-family:var(--fm);font-size:10.5px;letter-spacing:.06em;color:var(--soft);background:#ffffff08;border:1px solid var(--line);border-radius:999px;padding:7px 12px;cursor:pointer}
+.tbtn:hover{color:var(--ink)}
+
+/* key gate */
+.gate{position:fixed;inset:0;z-index:20;background:#070708ee;backdrop-filter:blur(10px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center}
+.gate.hide{display:none}
+.gate .kick{font-family:var(--fm);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:18px}
+.gate h1{font-family:var(--fd);font-weight:330;font-size:clamp(28px,5vw,42px);letter-spacing:-.02em;margin-bottom:14px}
+.gate h1 em{font-style:italic}
+.gate p{color:var(--soft);font-size:14.5px;line-height:1.6;max-width:46ch;margin-bottom:26px}
+.gate .field{width:min(520px,92vw);display:flex;gap:8px;background:#0c0c0e;border:1px solid var(--line);border-radius:14px;padding:6px 6px 6px 16px}
+.gate input{flex:1;background:transparent;border:0;outline:0;color:var(--ink);font-family:var(--fm);font-size:14px;padding:11px 0}
+.gate input::placeholder{color:#ffffff34}
+.gate .save{font-weight:600;font-size:13px;padding:11px 18px;border-radius:10px;border:0;cursor:pointer;background:var(--ink);color:#0a0a0a}
+.gate .fine{margin-top:18px;font-size:12px;color:var(--dim);max-width:48ch;line-height:1.5}
+.gate .fine a{color:var(--soft)}
+.gate .err{color:#FF6B5E;font-size:13px;margin-top:14px;min-height:1em}
+
+/* input phase */
+.lead{position:fixed;z-index:3;left:50%;top:26%;transform:translateX(-50%);text-align:center;width:92%;pointer-events:none;transition:.5s var(--ease)}
+.lead.hide{opacity:0;transform:translateX(-50%) translateY(-10px)}
+.lead h1{font-family:var(--fd);font-weight:330;font-size:clamp(26px,5vw,44px);letter-spacing:-.02em}
+.lead h1 em{font-style:italic}
+.lead p{color:var(--soft);font-size:14px;margin-top:9px}
+.island{position:fixed;z-index:6;left:50%;bottom:calc(34px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(660px,92vw);background:#0b0b0dd9;backdrop-filter:blur(20px);border:1px solid var(--line);border-radius:24px;padding:8px 8px 8px 18px;display:flex;align-items:flex-end;gap:10px;box-shadow:0 24px 70px -30px #000e;transition:.3s}
+.island.hide{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(20px)}
+.island:focus-within{border-color:#ffffff44}
+#idea{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--ink);font-family:var(--fu);font-size:15.5px;line-height:1.5;padding:11px 0;resize:none;max-height:120px}
+#idea::placeholder{color:#ffffff34}
+.go{font-family:var(--fu);font-weight:600;font-size:14px;padding:13px 22px;border-radius:999px;border:0;cursor:pointer;background:var(--ink);color:#0a0a0a;white-space:nowrap;transition:.2s var(--ease)}
+.go:hover{transform:translateY(-1px)}.go[disabled]{opacity:.32;cursor:not-allowed;transform:none}
+.exline{position:fixed;z-index:6;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);font-size:11px;color:var(--soft)}
+.exline button{background:none;border:0;color:var(--ink);cursor:pointer;text-decoration:underline;text-underline-offset:3px;font:inherit}
+.exline.hide{display:none}
+
+/* loading */
+.load{position:fixed;inset:0;z-index:7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;opacity:0;pointer-events:none;transition:.4s}
+.load.on{opacity:1}
+.load .t{font-family:var(--fd);font-style:italic;font-size:22px;text-shadow:0 1px 30px #000;text-align:center;padding:0 24px}
+.load .dots{display:flex;gap:7px}.load .dots i{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:bl 1.2s infinite}
+.load .dots i:nth-child(2){animation-delay:.2s}.load .dots i:nth-child(3){animation-delay:.4s}
+@keyframes bl{0%,100%{opacity:.25}50%{opacity:1}}
+
+/* results */
+.results{position:fixed;inset:0;z-index:4;overflow-y:auto;padding:78px 22px 60px;opacity:0;pointer-events:none;transition:opacity .6s var(--ease)}
+.results.on{opacity:1;pointer-events:auto}
+.rwrap{max-width:840px;margin:0 auto}
+.readback{font-family:var(--fd);font-weight:330;font-size:clamp(20px,3.4vw,28px);line-height:1.4;letter-spacing:-.01em;margin-bottom:8px}
+.readback em{font-style:normal;color:var(--accent)}
+.routing{color:var(--soft);font-size:13.5px;line-height:1.6;max-width:62ch;margin-bottom:36px;padding-bottom:24px;border-bottom:1px solid var(--line)}
+.lensblock{margin-bottom:40px}
+.lenshead{display:flex;align-items:baseline;gap:12px;margin-bottom:4px;flex-wrap:wrap}
+.lenshead .n{font-family:var(--fm);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.lenshead .i{font-size:11px;color:var(--dim)}
+.lenswhy{color:var(--soft);font-size:13px;line-height:1.55;margin-bottom:18px;max-width:60ch}
+.namegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.ncard{cursor:pointer;border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;background:linear-gradient(180deg,#ffffff0a,#ffffff03);transition:.22s var(--ease)}
+.ncard:hover{transform:translateY(-2px);border-color:#ffffff3a}
+.ncard .nm{font-family:var(--fd);font-weight:380;font-size:28px;letter-spacing:-.01em;color:var(--ink)}
+.ncard .mech{color:var(--soft);font-size:13px;line-height:1.5;margin-top:7px}
+.ncard .sc{font-family:var(--fm);font-size:11px;color:var(--dim);margin-top:11px;display:flex;justify-content:space-between}
+.ncard .sc b{color:var(--accent);font-weight:700}
+.again{display:block;margin:20px auto 0;font-family:var(--fu);font-weight:600;font-size:14px;padding:13px 26px;border-radius:999px;border:1px solid var(--line);background:#ffffff08;color:var(--ink);cursor:pointer}
+
+/* card sheet */
+.scrim{position:fixed;inset:0;z-index:10;background:#000000b0;backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:.35s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;z-index:11;right:26px;top:50%;width:390px;max-height:86vh;overflow:auto;transform:translateY(-50%) translateX(30px);opacity:0;pointer-events:none;background:#0e0e10f5;backdrop-filter:blur(26px);border:1px solid var(--line);border-radius:22px;padding:26px;box-shadow:0 40px 100px -30px #000;transition:.42s var(--ease)}
+.sheet.on{transform:translateY(-50%);opacity:1;pointer-events:auto}.sheet::-webkit-scrollbar{width:0}
+.sheet .lns{display:inline-flex;align-items:center;gap:7px;font-family:var(--fm);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:5px 11px;margin-bottom:16px;background:#e8a24c12}
+.sheet h2{font-family:var(--fd);font-weight:380;font-size:42px;letter-spacing:-.02em;line-height:1;margin-bottom:10px}
+.mech2{font-family:var(--fd);font-style:italic;font-weight:330;font-size:16px;line-height:1.5;color:var(--accent);margin-bottom:18px}
+.story{font-size:14px;line-height:1.6;color:var(--ink);margin-bottom:18px}
+.layers .ly{display:flex;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-size:13px;line-height:1.5}
+.layers .ly:first-child{border-top:0}.layers .ly .n{font-family:var(--fm);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft);flex:none;width:58px;padding-top:1px}
+.scoreh{display:flex;align-items:baseline;justify-content:space-between;border-top:1px solid var(--line);padding-top:16px;margin-top:6px}
+.scoreh .n{font-family:var(--fm);font-size:28px;font-weight:700}.scoreh .n small{font-size:13px;color:var(--soft)}
+.risk{margin-top:14px;font-size:13px;line-height:1.55;color:var(--soft)}.risk b{color:var(--ink);font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:4px}
+.sheet .x{position:absolute;top:18px;right:18px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:#ffffff08;color:var(--ink);cursor:pointer}
+
+@media(max-width:760px){
+  .results{padding:70px 16px 50px}
+  .sheet{right:0;left:0;top:auto;bottom:0;width:100%;max-height:84vh;border-radius:24px 24px 0 0;transform:translateY(100%);padding:22px 20px calc(26px + env(safe-area-inset-bottom,0px))}
+  .sheet.on{transform:translateY(0)}.sheet h2{font-size:36px}
+  .island{width:94vw}.exline{display:none}
+  .namegrid{grid-template-columns:1fr 1fr;gap:10px}.ncard .nm{font-size:24px}
+}
+</style>
+</head>
+<body>
+<canvas id="field"></canvas>
+<div class="vig"></div>
+
+<div class="bar">
+  <div class="brand"><span class="mk"></span> Naming Engine <small>· live</small></div>
+  <div class="tools">
+    <button class="tbtn" id="modelBtn">opus 4.8</button>
+    <button class="tbtn" id="keyBtn">key</button>
+  </div>
+</div>
+
+<!-- key gate -->
+<div class="gate" id="gate">
+  <div class="kick">Connect your engine</div>
+  <h1>This one <em>actually names things.</em></h1>
+  <p>Paste your Anthropic API key. It's stored only in this browser (localStorage) and sent only to Anthropic — never to me, never to a server.</p>
+  <div class="field"><input id="keyInput" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false" /><button class="save" id="keySave">Connect →</button></div>
+  <div class="err" id="keyErr"></div>
+  <div class="fine">No key? Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> (pay-as-you-go, separate from the Claude app). Each naming run costs a few cents.</div>
+</div>
+
+<!-- input phase -->
+<div class="lead" id="lead"><h1>Tell me what you're <em>building.</em></h1><p>I'll name it through the lenses that fit — live.</p></div>
+<div class="island" id="island"><textarea id="idea" rows="1" placeholder="a non-alcoholic aperitif for people who quit drinking but miss the ritual…"></textarea><button class="go" id="go" disabled>Name it →</button></div>
+<div class="exline" id="exline"><button id="ex">try an example</button></div>
+
+<!-- loading -->
+<div class="load" id="load"><div class="t" id="loadt">reading your idea…</div><div class="dots"><i></i><i></i><i></i></div></div>
+
+<!-- results -->
+<div class="results" id="results"><div class="rwrap" id="rwrap"></div></div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="sheet" id="sheet"></aside>
+
+<script>
+/* ============ config / key ============ */
+const LS_KEY='ne_key', LS_MODEL='ne_model';
+const MODELS=['claude-opus-4-8','claude-sonnet-4-6'];
+const MODEL_LBL={'claude-opus-4-8':'opus 4.8','claude-sonnet-4-6':'sonnet 4.6'};
+let apiKey=localStorage.getItem(LS_KEY)||'';
+let model=localStorage.getItem(LS_MODEL)||'claude-opus-4-8';
+document.getElementById('modelBtn').textContent=MODEL_LBL[model];
+
+const gate=document.getElementById('gate');
+function openGate(){gate.classList.remove('hide');document.getElementById('keyInput').value=apiKey;}
+function closeGate(){gate.classList.add('hide');}
+if(apiKey)closeGate();else openGate();
+document.getElementById('keySave').onclick=()=>{
+  const v=document.getElementById('keyInput').value.trim();
+  if(!v.startsWith('sk-ant-')){document.getElementById('keyErr').textContent='That doesn’t look like an Anthropic key (starts with sk-ant-).';return;}
+  apiKey=v;localStorage.setItem(LS_KEY,v);document.getElementById('keyErr').textContent='';closeGate();
+};
+document.getElementById('keyBtn').onclick=openGate;
+document.getElementById('modelBtn').onclick=()=>{model=model===MODELS[0]?MODELS[1]:MODELS[0];localStorage.setItem(LS_MODEL,model);document.getElementById('modelBtn').textContent=MODEL_LBL[model];};
+
+/* ============ ambient type-field (words form as you type) ============ */
+const cv=document.getElementById('field'),ctx=cv.getContext('2d');let W,H,DPR;
+function rz(){DPR=Math.min(devicePixelRatio||1,2);W=cv.width=innerWidth*DPR;H=cv.height=innerHeight*DPR;}
+addEventListener('resize',rz);rz();
+const STOP=new Set('the a an of for but who and to in it is we our that with you your are on as be by or so im were re make making build building this they them at not about into like just still little'.split(' '));
+let words=[],seen=new Set();
+function addWord(w){if(seen.has(w)||w.length<4||STOP.has(w))return;seen.add(w);
+  const a=Math.random()*6.28,r=(120+Math.random()*Math.min(W,H)*0.3);
+  words.push({t:w,x:W/2+Math.cos(a)*r*0.4,y:H*0.46+Math.sin(a)*r*0.35,tx:W/2+Math.cos(a)*r,ty:H*0.46+Math.sin(a)*r*0.72,dr:Math.random()*6.28,i:0,s:(12+Math.random()*4)*DPR});
+  if(words.length>26)words.shift();}
+function field(){ctx.clearRect(0,0,W,H);ctx.textAlign='center';ctx.textBaseline='middle';
+  for(const n of words){n.i+=((resultsOn?0:1)-n.i)*0.05;n.dr+=0.01;n.x+=(n.tx-n.x)*0.02+Math.cos(n.dr)*0.15*DPR;n.y+=(n.ty-n.y)*0.02+Math.sin(n.dr*0.9)*0.15*DPR;
+    if(n.i<0.01)continue;ctx.font=`400 ${n.s}px "Inter",sans-serif`;ctx.fillStyle=`rgba(232,162,76,${0.1+n.i*0.35})`;ctx.fillText(n.t,n.x,n.y);}
+  requestAnimationFrame(field);}
+let resultsOn=false;field();
+
+/* ============ input ============ */
+const idea=document.getElementById('idea'),go=document.getElementById('go'),lead=document.getElementById('lead');
+function onType(){idea.style.height='auto';idea.style.height=Math.min(idea.scrollHeight,120)+'px';
+  go.disabled=idea.value.trim().length<12;if(idea.value.trim())lead.classList.add('hide');
+  idea.value.toLowerCase().split(/[^a-z']+/).forEach(w=>{w=w.replace(/'/g,'');if(w)addWord(w);});}
+idea.oninput=onType;
+idea.onkeydown=e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();run();}};
+document.getElementById('ex').onclick=()=>{idea.value="a non-alcoholic aperitif for people who quit drinking but miss the ritual of a proper drink in the evening — about still feeling like you belong at the bar, premium and a little ceremonial";onType();idea.focus();};
+go.onclick=run;
+
+/* ============ the engine — live Claude call ============ */
+const SYSTEM=`You are a master brand-naming strategist — in the lineage of Lexicon Branding, Eat My Words, and the "How to Name Anything" method. Your craft is metaphor-driven, never thesaurus-driven. Great names plant a concrete image and compress a story.
+
+You name through MANY LENSES — distinct naming traditions. For a given idea, CHOOSE THE 4–6 LENSES THAT GENUINELY FIT IT (not all of them), and generate real candidates through each, with honest reasoning.
+
+THE LENSES:
+- Hidden Construction — a real word from the category hides inside the name (Ace & Tate → "acetate", the eyewear material; san franCISCO → Cisco).
+- Metaphor / Facet — a concrete object that IS the function (Stripe = the magnetic stripe on a card).
+- Mythology / History — a myth or historical figure whose story maps to the ambition (Nike = victory; Bluetooth = King Harald who united warring Denmark → unites devices).
+- Linguistic Borrowing — a word another language already has for the exact concept (Tenue ← "Tenue de Nîmes", the origin of denim).
+- Identity / Place — founder, geography, or heritage as provenance (Cisco ← San Francisco; Patagonia).
+- Contradiction — productive tension (Liquid Death; Impossible Foods).
+- Invented — a coined word grounded in recognizable morphemes (Figma ← "figure"; never random syllables).
+- Evocative — a familiar word transplanted into a surprising context (Apple; Oyster; Stripe).
+
+RULES:
+- Avoid AI slop: NO -ly/-ify/-able/-ora/-ix suffixes, NO Category+Modifier (CloudSync, DataGuard, SiteWatch), NO thesaurus words (Apex, Zenith, Summit, Catalyst, Pinnacle), NO vacant corporate words (Solutions, Labs, Platform, Hub), NO fake Latin/Greek mashups.
+- Every name must pass the phone test (say once, spell it) and carry a real 15-second origin story.
+- Be honest: score each name /100 for THIS brand, and name its real weakness.
+- Match the names to the user's stated feeling and tone.
+- Prefer real or recognizable words over invented ones; if invented, anchor in real morphemes.
+
+Return your answer ONLY by calling the present_names tool. Generate 2–3 candidates per lens.`;
+
+const TOOL={name:'present_names',description:'Present named candidates organized by naming lens.',input_schema:{type:'object',properties:{
+  read_back:{type:'string',description:'One sentence reflecting what the user is building, in your own words.'},
+  routing_rationale:{type:'string',description:'Why these particular lenses fit this brand (2-3 sentences).'},
+  lenses:{type:'array',items:{type:'object',properties:{
+    lens:{type:'string'},why_this_lens:{type:'string',description:'Why this lens fits this specific brand.'},
+    candidates:{type:'array',items:{type:'object',properties:{
+      name:{type:'string'},
+      mechanism:{type:'string',description:'The core idea in one line — the hidden word, the myth, the metaphor.'},
+      story:{type:'string',description:'15-second origin story.'},
+      sound:{type:'string',description:'How it sounds/feels aloud.'},
+      surface:{type:'string',description:'What it reads as at face value.'},
+      hidden:{type:'string',description:'The deeper/hidden layer, if any.'},
+      score:{type:'integer'},risk:{type:'string',description:'Honest weakness.'}
+    },required:['name','mechanism','story','score','risk']}}
+  },required:['lens','why_this_lens','candidates']}}
+},required:['read_back','routing_rationale','lenses']}};
+
+const LOADM=['reading your idea…','choosing the right lenses…','mining for hidden words…','checking the myths…','scoring the candidates…','almost there…'];
+let loadIv;
+async function run(){
+  if(!apiKey){openGate();return;}
+  const text=idea.value.trim();if(text.length<12)return;
+  document.getElementById('island').classList.add('hide');document.getElementById('exline').classList.add('hide');lead.classList.add('hide');
+  const load=document.getElementById('load');load.classList.add('on');let li=0;document.getElementById('loadt').textContent=LOADM[0];
+  loadIv=setInterval(()=>{li=(li+1)%LOADM.length;document.getElementById('loadt').textContent=LOADM[li];},2400);
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{
+      'content-type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model,max_tokens:16000,system:SYSTEM,tools:[TOOL],tool_choice:{type:'tool',name:'present_names'},thinking:{type:'disabled'},
+        messages:[{role:'user',content:'Name this. Be specific, surprising, and honest.\n\n'+text}]})});
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error((e.error&&e.error.message)||('HTTP '+res.status));}
+    const data=await res.json();
+    const tu=data.content.find(c=>c.type==='tool_use');
+    if(!tu)throw new Error('No structured result returned.');
+    render(tu.input);
+  }catch(err){
+    clearInterval(loadIv);load.classList.remove('on');
+    document.getElementById('island').classList.remove('hide');document.getElementById('exline').classList.remove('hide');
+    let m=err.message||String(err);
+    if(/401|authentication|invalid x-api-key/i.test(m))m='Your API key was rejected. Tap “key” to re-enter it.';
+    else if(/429|rate/i.test(m))m='Rate limited — wait a moment and try again.';
+    else if(/credit|billing|quota/i.test(m))m='Your Anthropic account needs credit/billing set up.';
+    else if(/Failed to fetch|NetworkError/i.test(m))m='Network/blocked request. Check connection (and that the key is valid).';
+    alert('Couldn’t name it:\n\n'+m);
+  }
+}
+
+/* ============ render real results ============ */
+let LAST={};
+function render(d){
+  clearInterval(loadIv);document.getElementById('load').classList.remove('on');
+  resultsOn=true;LAST=d;
+  const wrap=document.getElementById('rwrap');
+  let html=`<div class="readback">${esc(d.read_back||'')}</div><div class="routing">${esc(d.routing_rationale||'')}</div>`;
+  (d.lenses||[]).forEach((L,li)=>{
+    html+=`<div class="lensblock"><div class="lenshead"><span class="n">${esc(L.lens)}</span></div><div class="lenswhy">${esc(L.why_this_lens||'')}</div><div class="namegrid">`;
+    (L.candidates||[]).forEach((c,ci)=>{
+      html+=`<div class="ncard" data-l="${li}" data-c="${ci}"><div class="nm">${esc(c.name)}</div><div class="mech">${esc(c.mechanism||'')}</div><div class="sc"><span>${esc(L.lens.split(/[ ·\/]/)[0])}</span><b>${c.score||'—'}/100</b></div></div>`;
+    });
+    html+=`</div></div>`;
+  });
+  html+=`<button class="again" id="again">← name something else</button>`;
+  wrap.innerHTML=html;wrap.parentElement.scrollTop=0;
+  document.getElementById('results').classList.add('on');
+  wrap.querySelectorAll('.ncard').forEach(el=>el.onclick=()=>openCard(d.lenses[+el.dataset.l],d.lenses[+el.dataset.l].candidates[+el.dataset.c]));
+  document.getElementById('again').onclick=reset;
+}
+function openCard(L,c){
+  const tier=c.score>=85?'Exceptional':c.score>=70?'Strong':c.score>=55?'Workable':'Risky';
+  const layers=[['Sound',c.sound],['Surface',c.surface],['Hidden',c.hidden]].filter(x=>x[1]);
+  document.getElementById('sheet').innerHTML=`<button class="x" id="sx">✕</button>
+    <span class="lns">${esc(L.lens)}</span><h2>${esc(c.name)}</h2><div class="mech2">${esc(c.mechanism||'')}</div>
+    <div class="story">${esc(c.story||'')}</div>
+    <div class="layers">${layers.map(l=>`<div class="ly"><span class="n">${l[0]}</span><span>${esc(l[1])}</span></div>`).join('')}</div>
+    <div class="scoreh"><div class="n">${c.score||'—'}<small>/100</small></div><div class="t" style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft)">${tier} · this lens</div></div>
+    ${c.risk?`<div class="risk"><b>The risk</b>${esc(c.risk)}</div>`:''}`;
+  document.getElementById('sheet').classList.add('on');document.getElementById('scrim').classList.add('on');
+  document.getElementById('sx').onclick=closeCard;
+}
+function closeCard(){document.getElementById('sheet').classList.remove('on');document.getElementById('scrim').classList.remove('on');}
+document.getElementById('scrim').onclick=closeCard;
+function reset(){resultsOn=false;document.getElementById('results').classList.remove('on');
+  document.getElementById('island').classList.remove('hide');document.getElementById('exline').classList.remove('hide');
+  idea.value='';idea.style.height='auto';go.disabled=true;lead.classList.remove('hide');seen.clear();words=[];}
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+</script>
+</body>
+</html>
