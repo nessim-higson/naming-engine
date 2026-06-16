@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Naming Engine — prototypes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0..1,300..500&family=Inter:wght@400;500;600&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--fd:"Fraunces",Georgia,serif;--fu:"Inter",system-ui,sans-serif;--fm:"Space Mono",monospace;
+  --ink:#F4F1EA;--soft:#8c887e;--line:#ffffff1c;--accent:#E8A24C}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080809;color:var(--ink);font-family:var(--fu);-webkit-font-smoothing:antialiased;
+  min-height:100vh;padding:clamp(28px,7vw,80px) clamp(22px,7vw,80px)}
+.wrap{max-width:880px;margin:0 auto}
+.kick{font-family:var(--fm);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.kick .mk{width:15px;height:15px;border:1.5px solid var(--ink);border-radius:50%;position:relative}
+.kick .mk::after{content:"";position:absolute;inset:3.5px;border-radius:50%;background:var(--accent)}
+h1{font-family:var(--fd);font-weight:340;font-size:clamp(34px,7vw,60px);line-height:1.04;letter-spacing:-.02em;margin-bottom:18px}
+h1 em{font-style:italic}
+.lede{color:var(--soft);font-size:clamp(15px,2.4vw,18px);line-height:1.6;max-width:60ch;margin-bottom:48px}
+.lede b{color:var(--ink);font-weight:500}
+.feat{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:20px;
+  padding:30px;margin-bottom:14px;background:linear-gradient(180deg,#ffffff09,#ffffff03);transition:.25s cubic-bezier(.22,.61,.36,1)}
+.feat:hover{transform:translateY(-2px);border-color:#ffffff44}
+.feat .tag{font-family:var(--fm);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.feat h2{font-family:var(--fd);font-weight:380;font-size:clamp(26px,4vw,38px);margin-bottom:8px;letter-spacing:-.01em}
+.feat p{color:var(--soft);font-size:14.5px;line-height:1.55;max-width:54ch}
+.feat .go{margin-top:16px;font-size:13px;font-weight:600;color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:26px}
+.card{text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:14px;padding:18px;transition:.2s;background:#ffffff05}
+.card:hover{border-color:#ffffff33;transform:translateY(-1px)}
+.card h3{font-size:14.5px;font-weight:600;margin-bottom:5px}
+.card span{font-size:12.5px;color:var(--soft);line-height:1.45;display:block}
+.sec{font-family:var(--fm);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);margin:46px 0 4px}
+.foot{margin-top:54px;padding-top:22px;border-top:1px solid var(--line);font-size:12.5px;color:var(--soft)}
+.foot a{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kick"><span class="mk"></span> Naming Engine · prototypes</div>
+  <h1>A naming <em>strategist,</em><br>not a generator.</h1>
+  <p class="lede">Interaction-design probes for a tool that helps you understand <b>why</b> a great name works and arrive at one with conviction. A name shouldn't be filled into a form — it should <b>surface from your idea.</b> So the interface is an emergent type-field you fly through.</p>
+
+  <a class="feat" href="mockup-zspace/">
+    <div class="tag">● Canonical direction</div>
+    <h2>Z-Space</h2>
+    <p>A volumetric word-cloud you fly through. Type your idea → it surfaces → the brief resolves → the camera flies forward in Z, past the lenses, toward names that bloom from the field. A depth nav rail lets you travel between stages.</p>
+    <div class="go">Enter →</div>
+  </a>
+
+  <div class="sec">The journey · earlier probes</div>
+  <div class="grid">
+    <a class="card" href="mockup-emergence/"><h3>Emergence</h3><span>The full loop, flat — names bloom from the field, tap for a verdict.</span></a>
+    <a class="card" href="mockup-typefield/"><h3>Type-field</h3><span>Your words surface as type as you type, then resolve into a brief.</span></a>
+    <a class="card" href="mockup-listen/"><h3>Listen</h3><span>Dump a ramble → the engine reflects a structured brief back.</span></a>
+    <a class="card" href="mockup-seed/"><h3>Seed</h3><span>The brief as a living generative artifact that crystallizes.</span></a>
+    <a class="card" href="mockup-orientation/"><h3>Orientation</h3><span>First pass — a stepped wizard with live lens reactivity (superseded).</span></a>
+  </div>
+
+  <div class="foot">Best on desktop and mobile. Built as self-contained Canvas-2D prototypes. See <a href="STATE.md">STATE.md</a> for the build notes. The intelligence is currently mocked — real version wires a live model.</div>
+</div>
+</body>
+</html>

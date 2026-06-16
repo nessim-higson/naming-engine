@@ -1,0 +1,9 @@
+# Kept private — strategy, competitive intel, and methodology IP (not for public Pages)
+STRATEGY.md
+competitive-landscape-*.md
+sources/
+taxonomy/
+
+# OS / misc
+.DS_Store
+*.log

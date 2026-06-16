@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
+<title>Emergence — Naming Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0..1,300..500&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--fd:"Fraunces",Georgia,serif;--fu:"Inter",system-ui,sans-serif;--fm:"Space Mono",monospace;
+  --ink:#F4F1EA;--soft:#8a867d;--line:#ffffff1c;--ease:cubic-bezier(.22,.61,.36,1)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#080809;overscroll-behavior:none}
+body{font-family:var(--fu);color:var(--ink);-webkit-font-smoothing:antialiased;touch-action:manipulation}
+canvas{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+.vig{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(135% 120% at 50% 44%,transparent 38%,#04040699 80%,#040406 100%)}
+.bar{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;justify-content:space-between;align-items:center;
+  padding:env(safe-area-inset-top,18px) 22px 0;height:64px;pointer-events:none}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:13.5px;letter-spacing:.02em;text-shadow:0 1px 20px #000a;pointer-events:auto}
+.brand .mk{width:17px;height:17px;border:1.5px solid var(--ink);border-radius:50%;position:relative}
+.brand .mk::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--ink)}
+.brand small{color:var(--soft);font-weight:400}
+.tip{font-size:11.5px;color:var(--soft);text-shadow:0 1px 16px #000;text-align:right;max-width:46%}
+
+.lead{position:fixed;z-index:3;left:50%;top:26%;transform:translateX(-50%);text-align:center;width:92%;pointer-events:none;transition:opacity .6s,transform .6s}
+.lead.hide{opacity:0;transform:translateX(-50%) translateY(-12px)}
+.lead h1{font-family:var(--fd);font-weight:340;font-size:clamp(26px,5.4vw,42px);letter-spacing:-.02em}
+.lead h1 em{font-style:italic}
+.lead p{color:var(--soft);font-size:14px;margin-top:9px}
+
+/* dynamic island */
+.island{position:fixed;z-index:6;left:50%;bottom:calc(36px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  width:min(660px,92vw);background:#0c0c0ed9;backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);
+  border:1px solid var(--line);border-radius:999px;padding:6px 6px 6px 20px;display:flex;align-items:center;gap:10px;
+  box-shadow:0 24px 70px -30px #000e;transition:border-color .3s,opacity .4s}
+.island:focus-within{border-color:#ffffff44}
+.island .pre{font-family:var(--fm);font-size:11px;color:var(--soft);white-space:nowrap}
+#in{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--ink);font-family:var(--fu);font-size:15px;padding:11px 0}
+#in::placeholder{color:#ffffff34}
+.act{font-family:var(--fu);font-weight:600;font-size:13px;padding:11px 18px;border-radius:999px;border:0;cursor:pointer;
+  background:var(--ink);color:#0a0a0a;white-space:nowrap;transition:.2s var(--ease)}
+.act:hover{transform:translateY(-1px)}.act[disabled]{opacity:.3;cursor:not-allowed;transform:none}
+.exline{position:fixed;z-index:6;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);font-size:11px;color:var(--soft)}
+.exline button{background:none;border:0;color:var(--ink);cursor:pointer;text-decoration:underline;text-underline-offset:3px;font:inherit}
+
+/* verdict sheet */
+.scrim{position:fixed;inset:0;z-index:9;background:#000000a8;backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:.35s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;z-index:10;background:#0e0e10f2;backdrop-filter:blur(26px) saturate(1.2);-webkit-backdrop-filter:blur(26px) saturate(1.2);
+  border:1px solid var(--line);box-shadow:0 40px 100px -30px #000;transition:transform .42s var(--ease),opacity .42s var(--ease)}
+/* desktop: right card */
+.sheet{right:26px;top:50%;width:380px;max-height:86vh;overflow:auto;border-radius:22px;padding:26px 26px 24px;transform:translateY(-50%) translateX(30px);opacity:0;pointer-events:none}
+.sheet.on{transform:translateY(-50%) translateX(0);opacity:1;pointer-events:auto}
+.sheet::-webkit-scrollbar{width:0}
+.sheet .lens{display:inline-flex;align-items:center;gap:7px;font-family:var(--fm);font-size:11px;letter-spacing:.04em;color:var(--soft);
+  border:1px solid var(--line);border-radius:999px;padding:5px 11px;margin-bottom:16px}
+.sheet .lens .sw{width:8px;height:8px;border-radius:50%}
+.sheet h2{font-family:var(--fd);font-weight:380;font-size:38px;letter-spacing:-.02em;line-height:1;margin-bottom:6px}
+.sheet .story{font-family:var(--fd);font-style:italic;font-weight:330;font-size:16px;line-height:1.5;color:var(--ink);margin-bottom:20px}
+.scorehead{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+.scorehead .n{font-family:var(--fm);font-size:30px;font-weight:700}
+.scorehead .n small{font-size:14px;color:var(--soft)}
+.scorehead .tier{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.crit{display:flex;align-items:center;gap:11px;margin-bottom:9px}
+.crit .nm{font-size:12.5px;width:118px;flex:none;color:var(--soft)}
+.crit .tk{flex:1;height:5px;background:#ffffff16;border-radius:9px;overflow:hidden}
+.crit .fl{height:100%;border-radius:9px;transition:width .6s var(--ease)}
+.crit .v{font-family:var(--fm);font-size:11px;width:20px;text-align:right;color:var(--soft)}
+.cf{margin-top:18px;font-size:13px;line-height:1.55;color:var(--ink)}
+.cf b{color:var(--soft);font-weight:600;font-size:11px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px}
+.conn{margin-top:20px;border-top:1px solid var(--line);padding-top:16px}
+.conn .h{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);margin-bottom:10px}
+.conn .row{display:flex;gap:7px;flex-wrap:wrap}
+.conn .c{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;transition:.18s;background:#ffffff06}
+.conn .c:hover{border-color:#ffffff44}
+.sheet .x{position:absolute;top:18px;right:18px;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:#ffffff08;color:var(--ink);cursor:pointer;font-size:15px;line-height:1}
+
+@media(max-width:760px){
+  .tip{display:none}
+  .lead{top:20%}
+  /* sheet -> bottom sheet */
+  .sheet{right:0;left:0;top:auto;bottom:0;width:100%;max-height:82vh;border-radius:24px 24px 0 0;padding:22px 22px calc(26px + env(safe-area-inset-bottom,0px));
+    transform:translateY(100%);}
+  .sheet.on{transform:translateY(0)}
+  .sheet h2{font-size:34px}
+  .island{width:94vw;bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+  .exline{display:none}
+}
+</style>
+</head>
+<body>
+<canvas id="field"></canvas>
+<div class="vig"></div>
+<div class="bar">
+  <div class="brand"><span class="mk"></span> Naming Engine <small>· emergence</small></div>
+  <div class="tip" id="tip">type your idea — it surfaces, then resolves</div>
+</div>
+
+<div class="lead" id="lead"><h1>Tell me what you're <em>building.</em></h1><p>Watch your idea surface — then name it.</p></div>
+
+<div class="island" id="island">
+  <span class="pre">▸ idea</span>
+  <input id="in" placeholder="a drink for people who quit alcohol but miss the ritual…" autocomplete="off" autocapitalize="off" />
+  <button class="act" id="act" disabled>Resolve →</button>
+</div>
+<div class="exline"><button id="ex">try an example</button></div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="sheet" id="sheet"></aside>
+
+<script>
+const cv=document.getElementById('field'),ctx=cv.getContext('2d');
+let W,H,DPR,CXY=()=>[W*0.5,H*0.46];
+function resize(){DPR=Math.min(devicePixelRatio||1,2);W=cv.width=innerWidth*DPR;H=cv.height=innerHeight*DPR;}
+addEventListener('resize',resize);resize();
+const isMobile=()=>innerWidth<=760;
+const hexRgb=h=>{const n=parseInt(h.slice(1),16);return[n>>16&255,n>>8&255,n&255];};
+
+const STOP=new Set('the a an of for but who and to in it is we our that with you your are on as be by or so im were re make making build building this they them at not about into like just still little'.split(' '));
+const FEELKW={
+  Relief:['calm','rest','stress','relief','ease','quiet','peace','soothe'],
+  Momentum:['fast','speed','scale','grow','accelerate','momentum','ship','launch','move'],
+  'High-Status':['premium','luxury','crafted','elegant','refined','ceremonial','proper','sophisticated'],
+  Wonder:['magic','wonder','discover','curious','awe','imagine','dream','explore','delight'],
+  Rebellion:['rebel','against','disrupt','bold','break','anti','defiant','opposite'],
+  Belonging:['belong','community','together','tribe','people','human','connect','ritual','miss','bar','share'],
+  Control:['control','secure','precise','master','reliable','trust','data','power']
+};
+const FEELCOL={Relief:'#A8E0D8',Momentum:'#3DE0FF','High-Status':'#C9A24C',Wonder:'#9B6CF2',Rebellion:'#C6F24E',Belonging:'#E8A24C',Control:'#9FB2C6'};
+
+/* name banks — mock (real version = LLM from full brief × lenses) */
+const BANK={
+  Belonging:[
+    {t:'Vesper',lens:'Time · Myth',story:'The evening star — the hour the ritual begins.',s:88,cf:'Carries the ceremony without ever naming the drink.'},
+    {t:'Aperto',lens:'Linguistic · IT',story:'“Open” — and hidden inside aperitivo. Welcome, disguised as the category.',s:85,cf:'A hidden-construction name: insiders feel the wink.'},
+    {t:'Commons',lens:'Place · Metaphor',story:'The shared table everyone belongs at.',s:81,cf:'Belonging stated as a place, not a slogan.'},
+    {t:'Hearth',lens:'Metaphor',story:'The warm center people gather around.',s:78,cf:'Warm, human, instantly drawable.'},
+    {t:'Cohort',lens:'Identity',story:'Your people — the ones you arrive with.',s:73,cf:'Tribe-forward; a little corporate at the edges.'}
+  ],
+  Wonder:[
+    {t:'Halcyon',lens:'Mythology',story:'The mythic bird that calms the seas — a charmed, wondrous calm.',s:84,cf:'Deep myth, soft sound, rare in-category.'},
+    {t:'Lumen',lens:'Latin · Light',story:'A unit of light — the spark of discovery.',s:80,cf:'Clean, scalable, optimistic.'},
+    {t:'Prism',lens:'Metaphor',story:'One input in, a spectrum out.',s:78,cf:'Visual and ownable.'},
+    {t:'Astra',lens:'Linguistic',story:'To the stars.',s:71,cf:'Pretty, but a touch occupied.'}
+  ],
+  'High-Status':[
+    {t:'Sable',lens:'Material',story:'Deep, rare, quietly expensive.',s:83,cf:'Status by texture, not by shouting.'},
+    {t:'Atelier',lens:'Linguistic · FR',story:'The master’s workshop — craft as status.',s:79,cf:'Premium signal; longer to say.'},
+    {t:'Noctua',lens:'Latin',story:'Of the night; an owl — refined, knowing.',s:76,cf:'Distinctive, a little cryptic.'}
+  ],
+  Rebellion:[
+    {t:'Vandal',lens:'Edge',story:'Beautiful defiance.',s:80,cf:'Polarizing — and that’s the point.'},
+    {t:'Static',lens:'Metaphor',story:'Disruption you can feel.',s:75,cf:'Tense, modern, a bit abstract.'},
+    {t:'Riot',lens:'Contradiction',story:'Loud, on purpose.',s:73,cf:'Bold; watch the negative second-meaning.'}
+  ],
+  Momentum:[
+    {t:'Kestrel',lens:'Nature',story:'Hovers, then strikes — speed with control.',s:84,cf:'Speed that still feels precise.'},
+    {t:'Slipstream',lens:'Physics',story:'Drafting fast behind nothing.',s:80,cf:'Evocative; a little long.'},
+    {t:'Vault',lens:'Metaphor',story:'To leap — clear over.',s:77,cf:'Punchy; shared meaning with security.'}
+  ],
+  Relief:[
+    {t:'Cove',lens:'Place',story:'A protected harbor.',s:82,cf:'Calm, safe, instantly visual.'},
+    {t:'Lull',lens:'Sound',story:'The quiet that arrives.',s:79,cf:'Soft and short; gentle.'},
+    {t:'Eaves',lens:'Architecture',story:'The edge that keeps the rain off.',s:75,cf:'Quietly protective; uncommon.'}
+  ],
+  Control:[
+    {t:'Helm',lens:'Maritime',story:'Steering — command.',s:83,cf:'Authority without aggression.'},
+    {t:'Tare',lens:'Measure',story:'The precise zero before you weigh.',s:78,cf:'Precise; needs a teaching beat.'},
+    {t:'Bastion',lens:'Architecture',story:'A stronghold — defensible.',s:80,cf:'Strong, secure, a touch heavy.'}
+  ]
+};
+const CRITS=['Imagery','Memorability','Distinct.','Special'];
+
+/* nodes */
+let nodes=[], seen=new Set(), threads=[], phase='type', feeling=null;
+function addWord(w){ if(seen.has(w)||w.length<4||STOP.has(w))return; seen.add(w);
+  const[cx,cy]=CXY(); const a=Math.random()*Math.PI*2, r=(110+Math.random()*Math.min(W,H)*0.30);
+  nodes.push({text:w,x:cx+Math.cos(a)*r*0.4,y:cy+Math.sin(a)*r*0.35,tx:cx+Math.cos(a)*r,ty:cy+Math.sin(a)*r*0.7,
+    drift:Math.random()*6.28,kind:'raw',i:0,size:(12+Math.random()*4)*DPR,col:[244,241,234]});
+  if(nodes.filter(n=>n.kind==='raw').length>34){const k=nodes.findIndex(n=>n.kind==='raw');nodes.splice(k,1);}
+}
+function detectFeeling(text){const t=' '+text.toLowerCase()+' ';let best='Belonging',bs=0;
+  for(const f in FEELKW){let s=0;FEELKW[f].forEach(k=>{if(t.includes(k))s++;});if(s>bs){bs=s;best=f;}}return best;}
+function resolveBrief(text){
+  feeling=detectFeeling(text); const col=hexRgb(FEELCOL[feeling]); const[cx,cy]=CXY();
+  const lab={text:'FEELING · '+feeling,x:cx,y:cy-70*DPR,tx:cx,ty:cy-150*DPR,drift:0,kind:'label',i:0,size:17*DPR,col};
+  nodes.push(lab);
+  const matched=nodes.filter(n=>n.kind==='raw'&&FEELKW[feeling].some(k=>n.text.includes(k)));
+  (matched.length?matched:nodes.filter(n=>n.kind==='raw').slice(-4)).slice(0,5).forEach(n=>{threads.push([lab,n,col]);n.col=col;});
+  phase='brief';
+  document.getElementById('act').textContent='Name this world →';
+  document.getElementById('act').disabled=false;
+  document.getElementById('tip').textContent='feeling: '+feeling+' — now let names emerge';
+}
+function bloomNames(){
+  const col=hexRgb(FEELCOL[feeling]); const list=BANK[feeling]||BANK.Belonging; const[cx,cy]=CXY();
+  // recede raw + label
+  nodes.forEach(n=>{if(n.kind==='raw'){n.fade=true;} });
+  const N=list.length, ringX=Math.min(W,H)*(isMobile()?0.32:0.42), ringY=Math.min(W,H)*(isMobile()?0.38:0.30);
+  list.forEach((nm,k)=>{
+    const a=-Math.PI/2 + 0.42 + (k/N)*Math.PI*2;
+    const tx=cx+Math.cos(a)*ringX, ty=cy+Math.sin(a)*ringY;
+    nodes.push({text:nm.t,x:tx,y:ty,tx,ty,drift:Math.random()*6.28,
+      kind:'name',i:0,size:(isMobile()?24:28)*DPR,col,data:nm});
+  });
+  // small lens sublabels threaded to each name
+  phase='named';
+  document.getElementById('act').textContent='✓ names emerged';
+  document.getElementById('act').disabled=true;
+  document.getElementById('tip').textContent='tap a name to see why it exists';
+}
+
+/* layout: gentle repulsion so labels/names don't stack */
+function repel(){
+  for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+    const a=nodes[i],b=nodes[j];
+    const aw=a.kind==='name'?(a._w?a._w/2+34*DPR:96*DPR):24*DPR;
+    const bw=b.kind==='name'?(b._w?b._w/2+34*DPR:96*DPR):24*DPR;
+    const min=aw+bw;
+    let dx=a.x-b.x,dy=a.y-b.y,d=Math.hypot(dx,dy)||1;
+    if(d<min){const push=(min-d)/min*0.9*DPR;dx/=d;dy/=d;a.x+=dx*push;a.y+=dy*push;b.x-=dx*push;b.y-=dy*push;}
+  }
+}
+function frame(){
+  ctx.globalCompositeOperation='source-over';ctx.fillStyle='#080809';ctx.fillRect(0,0,W,H);
+  // threads
+  ctx.lineWidth=1*DPR;
+  for(const[a,b,c]of threads){const al=Math.min(a.i,b.i)*(a.fade||b.fade?0.12:0.45);
+    ctx.strokeStyle=`rgba(${c[0]},${c[1]},${c[2]},${al})`;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+  // proximity web (raw)
+  ctx.lineWidth=0.6*DPR;
+  for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){const a=nodes[i],b=nodes[j];
+    if(a.kind!=='raw'||b.kind!=='raw')continue;const d=Math.hypot(a.x-b.x,a.y-b.y);
+    if(d<150*DPR){ctx.strokeStyle=`rgba(255,255,255,${(1-d/(150*DPR))*0.045*Math.min(a.i,b.i)*(a.fade?0.3:1)})`;
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}}
+  repel();
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  for(const n of nodes){
+    const goal=n.fade?0:1; n.i+=(goal-n.i)*0.06; n.drift+=0.01;
+    n.x+=(n.tx-n.x)*0.02+Math.cos(n.drift)*0.16*DPR; n.y+=(n.ty-n.y)*0.02+Math.sin(n.drift*0.9)*0.16*DPR;
+    const[r,g,b]=n.col;
+    if(n.kind==='name'){
+      ctx.font=`380 ${n.size}px "Fraunces",serif`;
+      ctx.fillStyle=`rgba(${r},${g},${b},${0.55+n.i*0.45})`;
+      ctx.shadowColor=`rgba(${r},${g},${b},.45)`;ctx.shadowBlur=22*DPR;ctx.fillText(n.text,n.x,n.y);ctx.shadowBlur=0;
+      ctx.font=`400 ${10*DPR}px "Space Mono",monospace`;ctx.fillStyle=`rgba(${r},${g},${b},${n.i*0.5})`;
+      ctx.fillText(n.data.lens.toUpperCase(),n.x,n.y+n.size*0.72);
+      n._w=ctx.measureText(n.text).width; // approx
+    }else if(n.kind==='label'){
+      ctx.font=`700 ${n.size}px "Space Mono",monospace`;ctx.fillStyle=`rgba(${r},${g},${b},${n.i})`;
+      ctx.shadowColor=`rgba(${r},${g},${b},.5)`;ctx.shadowBlur=18*DPR;ctx.fillText(n.text,n.x,n.y);ctx.shadowBlur=0;
+    }else{
+      ctx.font=`400 ${n.size}px "Inter",sans-serif`;ctx.fillStyle=`rgba(${r},${g},${b},${(0.16+n.i*0.5)*(n.fade?0.22:1)})`;
+      ctx.fillText(n.text,n.x,n.y);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+/* hit test names */
+function nameAt(px,py){
+  let hit=null,best=1e9;
+  for(const n of nodes){if(n.kind!=='name')continue;
+    const w=(n._w||n.size*4), h=n.size*1.4, dx=Math.abs(px-n.x),dy=Math.abs(py-n.y);
+    if(dx<w/2+18*DPR&&dy<h/2+14*DPR){const d=dx+dy;if(d<best){best=d;hit=n;}}}
+  return hit;
+}
+function openSheet(n){
+  const d=n.data, col=FEELCOL[feeling]; const tier=d.s>=85?'Exceptional':d.s>=70?'Strong':'Workable';
+  // mock per-criterion from score
+  const seedv=(i)=>Math.max(2,Math.min(5,Math.round(d.s/20 + ((d.t.charCodeAt(i%d.t.length)%3)-1))));
+  const crits=CRITS.map((c,i)=>`<div class="crit"><span class="nm">${c}</span><span class="tk"><span class="fl" style="width:${seedv(i)*20}%;background:${col}"></span></span><span class="v">${seedv(i)}</span></div>`).join('');
+  const sibs=(BANK[feeling]||[]).filter(x=>x.t!==d.t).map(x=>`<span class="c" data-jump="${x.t}">${x.t}</span>`).join('');
+  document.getElementById('sheet').innerHTML=`
+    <button class="x" id="sx">✕</button>
+    <span class="lens"><span class="sw" style="background:${col}"></span>${d.lens}</span>
+    <h2>${d.t}</h2>
+    <div class="story">${d.story}</div>
+    <div class="scorehead"><div class="n">${d.s}<small>/100</small></div><div class="tier">${tier}</div></div>
+    ${crits}
+    <div class="cf"><b>The case for</b>${d.cf}</div>
+    <div class="conn"><div class="h">Connected · same world</div><div class="row">${sibs}</div></div>`;
+  document.getElementById('sheet').classList.add('on');document.getElementById('scrim').classList.add('on');
+  document.getElementById('sx').onclick=closeSheet;
+  document.querySelectorAll('#sheet .c').forEach(c=>c.onclick=()=>{const t=c.dataset.jump;const nn=nodes.find(n=>n.kind==='name'&&n.text===t);if(nn)openSheet(nn);});
+}
+function closeSheet(){document.getElementById('sheet').classList.remove('on');document.getElementById('scrim').classList.remove('on');}
+document.getElementById('scrim').onclick=closeSheet;
+
+cv.addEventListener('pointerdown',e=>{if(phase!=='named')return;const n=nameAt(e.clientX*DPR,e.clientY*DPR);if(n)openSheet(n);});
+
+/* input */
+const inp=document.getElementById('in'),act=document.getElementById('act'),lead=document.getElementById('lead');
+let deb;
+function onType(){
+  if(inp.value.trim())lead.classList.add('hide');
+  if(phase==='type')act.disabled=inp.value.trim().length<14;
+  inp.value.toLowerCase().split(/[^a-z']+/).forEach(w=>{w=w.replace(/'/g,'');if(w)addWord(w);});
+  clearTimeout(deb);deb=setTimeout(()=>{if(phase==='type'&&inp.value.trim().length>20)resolveBrief(inp.value);},1400);
+}
+inp.oninput=onType;
+act.onclick=()=>{ if(phase==='type')resolveBrief(inp.value); else if(phase==='brief')bloomNames(); };
+document.getElementById('ex').onclick=()=>{inp.value="a non-alcoholic aperitif for people who quit drinking but miss the ritual of a proper drink in the evening — about still feeling like you belong at the bar, premium and a little ceremonial";onType();inp.focus();};
+frame();
+</script>
+</body>
+</html>

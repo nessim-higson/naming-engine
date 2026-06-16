@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="editorial">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Orientation — Naming Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   WET CEMENT — the entire skin lives in these tokens.
+   Reskin = change a theme block. Structure never moves.
+   ============================================================ */
+:root{
+  --font-display:"Fraunces", Georgia, serif;
+  --font-ui:"Inter", system-ui, sans-serif;
+  --step:8px;
+  --r-sm:8px; --r-md:14px; --r-lg:22px;
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --dur:.5s;
+  --maxw:1240px;
+}
+/* —— SKIN 1: EDITORIAL (paper + ink + cobalt) —— */
+[data-theme="editorial"]{
+  --bg:#EDE8DD; --bg-2:#F6F2E9; --panel:#FBF9F3;
+  --ink:#1A1714; --ink-soft:#6A6256; --line:#D8D0C0;
+  --accent:#1B3BE0; --accent-soft:#1b3be01a; --accent-ink:#fff;
+  --glow:#1B3BE0; --shadow:0 1px 2px #1a17140d,0 18px 50px -28px #1a171433;
+}
+/* —— SKIN 2: STUDIO (dark) —— */
+[data-theme="studio"]{
+  --bg:#0B0B0D; --bg-2:#141418; --panel:#161619;
+  --ink:#F3F1EC; --ink-soft:#8C8A84; --line:#2A2A30;
+  --accent:#C6F24E; --accent-soft:#c6f24e14; --accent-ink:#0B0B0D;
+  --glow:#C6F24E; --shadow:0 1px 2px #0006,0 24px 60px -30px #000;
+}
+/* —— SKIN 3: MONO (restraint, no hue) —— */
+[data-theme="mono"]{
+  --bg:#E7E5E1; --bg-2:#F0EEEA; --panel:#FAF9F7;
+  --ink:#17150F; --ink-soft:#716C62; --line:#D2CDC3;
+  --accent:#17150F; --accent-soft:#17150f12; --accent-ink:#FAF9F7;
+  --glow:#9A9488; --shadow:0 1px 2px #0000000a,0 18px 44px -26px #00000026;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--font-ui);
+  -webkit-font-smoothing:antialiased; line-height:1.5;
+  transition:background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+/* —— Top bar —— */
+.bar{
+  max-width:var(--maxw); margin:0 auto; padding:22px 32px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.brand{display:flex; align-items:center; gap:11px; font-weight:600; letter-spacing:.02em; font-size:15px;}
+.brand .mark{width:20px; height:20px; position:relative}
+.brand .mark::before,.brand .mark::after{content:""; position:absolute; inset:0; border:1.5px solid var(--ink); border-radius:50%}
+.brand .mark::after{transform:scale(.5); background:var(--accent); border-color:var(--accent)}
+.brand small{color:var(--ink-soft); font-weight:400; letter-spacing:0}
+.themes{display:flex; gap:6px; background:var(--panel); padding:5px; border-radius:999px; border:1px solid var(--line)}
+.themes button{
+  font-family:var(--font-ui); font-size:12px; font-weight:500; color:var(--ink-soft);
+  background:transparent; border:0; padding:7px 13px; border-radius:999px; cursor:pointer;
+  transition:all .25s var(--ease);
+}
+.themes button[aria-pressed="true"]{background:var(--ink); color:var(--bg)}
+
+/* —— Layout —— */
+.wrap{max-width:var(--maxw); margin:0 auto; padding:14px 32px 60px;
+  display:grid; grid-template-columns:1.15fr .85fr; gap:30px; align-items:start;}
+@media(max-width:920px){.wrap{grid-template-columns:1fr}}
+
+/* —— Left: the conversation —— */
+.stage{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--r-lg);
+  padding:46px 48px 40px; min-height:560px; box-shadow:var(--shadow);
+  display:flex; flex-direction:column;
+  transition:background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.progress{height:3px; background:var(--line); border-radius:99px; overflow:hidden; margin-bottom:34px}
+.progress i{display:block; height:100%; background:var(--accent); border-radius:99px; transition:width .6s var(--ease)}
+.eyebrow{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:18px; font-weight:500}
+.eyebrow b{color:var(--accent)}
+.q{font-family:var(--font-display); font-weight:380; font-size:clamp(30px,3.6vw,46px); line-height:1.05; letter-spacing:-.015em; margin-bottom:14px}
+.teach{color:var(--ink-soft); font-size:15px; max-width:46ch; margin-bottom:30px}
+.body{flex:1}
+
+/* step transition */
+.step{animation:rise .55s var(--ease) both}
+@keyframes rise{from{opacity:0; transform:translateY(14px)}to{opacity:1; transform:none}}
+
+/* entity cards */
+.cards{display:grid; grid-template-columns:repeat(3,1fr); gap:11px}
+.card{
+  border:1px solid var(--line); border-radius:var(--r-md); padding:18px 16px; cursor:pointer;
+  background:var(--bg-2); transition:all .25s var(--ease); position:relative;
+}
+.card:hover{transform:translateY(-2px)}
+.card .ic{font-size:20px; margin-bottom:9px; display:block}
+.card .t{font-weight:600; font-size:14px; display:block}
+.card .s{font-size:11.5px; color:var(--ink-soft); margin-top:3px; display:block}
+.card[aria-pressed="true"]{border-color:var(--accent); background:var(--accent-soft); box-shadow:inset 0 0 0 1px var(--accent)}
+.card .tag{position:absolute; top:10px; right:10px; font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:600; opacity:0; transition:.2s}
+.card[data-focus="1"] .tag{opacity:1}
+
+/* text inputs */
+textarea,.line-in{
+  width:100%; font-family:var(--font-ui); font-size:16px; color:var(--ink);
+  background:var(--bg-2); border:1px solid var(--line); border-radius:var(--r-md);
+  padding:15px 17px; resize:none; transition:border-color .2s, box-shadow .2s;
+}
+textarea{min-height:108px; line-height:1.55}
+textarea:focus,.line-in:focus{outline:0; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+textarea::placeholder,.line-in::placeholder{color:var(--ink-soft); opacity:.7}
+
+/* chips */
+.chips{display:flex; flex-wrap:wrap; gap:9px}
+.chip{
+  border:1px solid var(--line); background:var(--bg-2); color:var(--ink);
+  padding:10px 16px; border-radius:999px; cursor:pointer; font-size:14px; font-weight:500;
+  transition:all .2s var(--ease);
+}
+.chip:hover{border-color:var(--ink-soft)}
+.chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.chip .h{font-size:11.5px; color:var(--ink-soft); font-weight:400; margin-left:6px}
+.chip[aria-pressed="true"] .h{color:var(--accent-ink); opacity:.8}
+
+/* sliders */
+.slider{margin-bottom:24px}
+.slider .lab{display:flex; justify-content:space-between; font-size:13px; margin-bottom:9px}
+.slider .lab span:first-child{font-weight:600}
+.slider .lab span:last-child{font-weight:600; text-align:right}
+.slider .lab .on{color:var(--accent)}
+.slider .lab .off{color:var(--ink-soft)}
+input[type=range]{
+  -webkit-appearance:none; appearance:none; width:100%; height:4px; border-radius:99px;
+  background:linear-gradient(90deg,var(--accent) 0%,var(--accent) var(--p,50%),var(--line) var(--p,50%)); cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:22px; height:22px; border-radius:50%; background:var(--panel);
+  border:2px solid var(--accent); box-shadow:var(--shadow); cursor:grab;
+}
+input[type=range]::-webkit-slider-thumb:active{cursor:grabbing; transform:scale(1.08)}
+
+/* onlyness builder */
+.only{font-family:var(--font-display); font-size:clamp(20px,2.3vw,27px); line-height:1.5; font-weight:360; letter-spacing:-.01em}
+.only .blank{
+  display:inline-block; border-bottom:2px solid var(--accent); min-width:120px; padding:0 4px;
+  font-family:var(--font-ui); font-size:16px; background:transparent; color:var(--ink); font-weight:500;
+}
+.only .blank::placeholder{color:var(--accent); opacity:.55}
+.only .blank:focus{outline:0; background:var(--accent-soft)}
+.gatebadge{margin-top:26px; display:inline-flex; align-items:center; gap:9px; font-size:13px; color:var(--ink-soft);
+  padding:9px 15px; border:1px solid var(--line); border-radius:999px; transition:.3s}
+.gatebadge.ready{color:var(--accent); border-color:var(--accent); background:var(--accent-soft)}
+.gatebadge .dot{width:8px; height:8px; border-radius:50%; background:var(--ink-soft); transition:.3s}
+.gatebadge.ready .dot{background:var(--accent); box-shadow:0 0 0 4px var(--accent-soft)}
+
+/* nav */
+.nav{display:flex; justify-content:space-between; align-items:center; margin-top:34px; padding-top:24px; border-top:1px solid var(--line)}
+.btn{
+  font-family:var(--font-ui); font-weight:600; font-size:14px; border-radius:999px; cursor:pointer;
+  padding:13px 26px; border:1px solid var(--ink); background:var(--ink); color:var(--bg);
+  transition:all .2s var(--ease); display:inline-flex; align-items:center; gap:8px;
+}
+.btn:hover{transform:translateY(-1px)}
+.btn[disabled]{opacity:.35; cursor:not-allowed; transform:none}
+.btn.ghost{background:transparent; color:var(--ink-soft); border-color:transparent; padding-left:6px}
+.btn.ghost:hover{color:var(--ink)}
+
+/* —— Right: the live engine —— */
+.engine{position:sticky; top:14px; display:flex; flex-direction:column; gap:18px}
+.epanel{background:var(--panel); border:1px solid var(--line); border-radius:var(--r-lg); padding:24px 24px 26px; box-shadow:var(--shadow);
+  transition:background var(--dur) var(--ease), border-color var(--dur) var(--ease)}
+.epanel h3{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft); font-weight:600; margin-bottom:4px; display:flex; align-items:center; gap:8px}
+.epanel h3 .live{width:6px; height:6px; border-radius:50%; background:var(--accent); animation:pulse 1.8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.epanel .sub{font-size:12.5px; color:var(--ink-soft); margin-bottom:16px}
+
+/* lens list */
+.lens{display:flex; align-items:center; gap:12px; padding:7px 0}
+.lens .name{font-size:13.5px; font-weight:500; width:148px; flex:none; transition:color .4s, opacity .4s}
+.lens .track{flex:1; height:6px; background:var(--line); border-radius:99px; overflow:hidden}
+.lens .fill{height:100%; width:0%; border-radius:99px; background:var(--accent); transition:width .7s var(--ease), opacity .4s}
+.lens .pct{font-size:11px; color:var(--ink-soft); width:30px; text-align:right; font-variant-numeric:tabular-nums}
+.lens.dim .name{opacity:.4}
+.lens.dim .fill{opacity:.3}
+.lens.hot .name{color:var(--accent)}
+.lens.hot .fill{box-shadow:0 0 12px -1px var(--glow)}
+
+/* brief chips */
+.brief{display:flex; flex-wrap:wrap; gap:7px}
+.bchip{font-size:12px; padding:6px 12px; border-radius:999px; background:var(--bg-2); border:1px solid var(--line); color:var(--ink)}
+.bchip b{color:var(--accent)}
+.brief .empty{font-size:12.5px; color:var(--ink-soft); font-style:italic}
+
+/* complete */
+.done{text-align:left}
+.done .big{font-family:var(--font-display); font-size:clamp(28px,3.4vw,40px); font-weight:380; letter-spacing:-.015em; line-height:1.1; margin-bottom:14px}
+.done .only-final{font-family:var(--font-display); font-size:19px; line-height:1.5; color:var(--ink); border-left:2px solid var(--accent); padding-left:16px; margin:22px 0; font-weight:360}
+.done .only-final em{font-style:normal; color:var(--accent)}
+.cta{margin-top:8px; display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+.cta .note{font-size:12.5px; color:var(--ink-soft)}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="brand"><span class="mark"></span> Naming Engine <small>· orientation</small></div>
+  <div class="themes" id="themes">
+    <button data-skin="editorial" aria-pressed="true">Editorial</button>
+    <button data-skin="studio" aria-pressed="false">Studio</button>
+    <button data-skin="mono" aria-pressed="false">Mono</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <!-- LEFT: conversation -->
+  <section class="stage">
+    <div class="progress"><i id="bar" style="width:14%"></i></div>
+    <div class="body" id="body"></div>
+    <div class="nav">
+      <button class="btn ghost" id="back">← Back</button>
+      <button class="btn" id="next">Continue →</button>
+    </div>
+  </section>
+
+  <!-- RIGHT: live engine -->
+  <aside class="engine">
+    <div class="epanel">
+      <h3><span class="live"></span> Reading your brief</h3>
+      <div class="sub">Your answers steer which naming pathways the engine will explore.</div>
+      <div id="lenses"></div>
+    </div>
+    <div class="epanel">
+      <h3>The brief, so far</h3>
+      <div class="brief" id="brief"><span class="empty">Nothing yet — let's begin.</span></div>
+    </div>
+  </aside>
+</div>
+
+<script>
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = { entity:null, purpose:"", audience:"", feeling:null,
+  tone:{play:50, acc:50, trad:50}, only:{offer:"", cat:"", ben:""} };
+let stepIdx = 0;
+
+/* ---- Lens registry (display + reactive weights) ---- */
+const LENSES = [
+  ["metaphor","Metaphor"],["evocative","Evocative"],["hidden","Hidden Construction"],
+  ["linguistic","Linguistic Borrow"],["mythology","Mythology"],["identity","Identity / Founder"],
+  ["invented","Invented"],["contradiction","Contradiction"],["geography","Geography"],
+  ["acronym","Acronym"],["experiential","Experiential"],["descriptive","Descriptive"]
+];
+const BASE = Object.fromEntries(LENSES.map(([k])=>[k,1]));
+
+const FEELING_BOOST = {
+  Relief:{experiential:3,metaphor:2,evocative:1},
+  Momentum:{invented:3,sound:0,metaphor:2,experiential:1},
+  "High-Status":{linguistic:3,mythology:2,identity:2,evocative:1},
+  Wonder:{mythology:3,metaphor:2,evocative:2,hidden:1},
+  Rebellion:{contradiction:4,invented:2,experiential:1},
+  Belonging:{identity:3,linguistic:2,evocative:1,geography:1},
+  Control:{descriptive:3,invented:1,acronym:2,metaphor:1}
+};
+const ENTITY_BOOST = {
+  Business:{metaphor:2,evocative:2,invented:1,identity:1}, Product:{experiential:2,metaphor:1,invented:1},
+  Project:{metaphor:2,invented:1,acronym:1}, Person:{identity:3,linguistic:1},
+  Place:{geography:3,identity:1}, "Creative work":{evocative:2,contradiction:2,metaphor:1,mythology:1}
+};
+
+function computeLenses(){
+  const w = {...BASE};
+  const add = obj => { for(const k in obj){ if(w[k]!=null) w[k]+=obj[k]; } };
+  if(state.entity) add(ENTITY_BOOST[state.entity]||{});
+  if(state.feeling) add(FEELING_BOOST[state.feeling]||{});
+  // tonal sliders
+  const {play,acc,trad}=state.tone;
+  if(play<45) add({contradiction:2,experiential:2}); else if(play>55) add({mythology:2,identity:1,descriptive:1});
+  if(acc>55) add({linguistic:2,mythology:1,identity:1}); else if(acc<45) add({descriptive:2,experiential:1});
+  if(trad>55) add({invented:2,metaphor:2,hidden:1}); else if(trad<45) add({identity:2,descriptive:1,linguistic:1});
+  return w;
+}
+function renderLenses(){
+  const w = computeLenses();
+  const max = Math.max(...Object.values(w));
+  const min = Math.min(...Object.values(w));
+  const el = document.getElementById('lenses');
+  const sorted = LENSES.slice().sort((a,b)=>w[b[0]]-w[a[0]]);
+  el.innerHTML = sorted.map(([k,label])=>{
+    const pct = Math.round(((w[k]-min)/(max-min||1))*100);
+    const cls = pct>=70?'hot':(pct<=22?'dim':'');
+    return `<div class="lens ${cls}"><span class="name">${label}</span>
+      <span class="track"><span class="fill" style="width:${Math.max(pct,4)}%"></span></span>
+      <span class="pct">${pct}</span></div>`;
+  }).join('');
+}
+function renderBrief(){
+  const el=document.getElementById('brief'); const c=[];
+  if(state.entity) c.push(`<span class="bchip">naming a <b>${state.entity}</b></span>`);
+  if(state.feeling) c.push(`<span class="bchip">feeling: <b>${state.feeling}</b></span>`);
+  if(state.audience) c.push(`<span class="bchip">for <b>${truncate(state.audience,22)}</b></span>`);
+  const t=state.tone;
+  if(stepIdx>=4){
+    c.push(`<span class="bchip">${t.play<45?'playful':t.play>55?'serious':'balanced'} · ${t.acc>55?'exclusive':t.acc<45?'accessible':'mid'} · ${t.trad>55?'innovative':t.trad<45?'traditional':'mid'}</span>`);
+  }
+  if(state.only.offer&&state.only.cat&&state.only.ben) c.push(`<span class="bchip" style="border-color:var(--accent)">✓ onlyness set</span>`);
+  el.innerHTML = c.length? c.join('') : `<span class="empty">Nothing yet — let's begin.</span>`;
+}
+const truncate=(s,n)=>s.length>n?s.slice(0,n)+'…':s;
+
+/* ============================================================
+   STEPS
+   ============================================================ */
+const STEPS = [
+  { // 0 — entity
+    eyebrow:`Step <b>01</b> · What are you naming`,
+    q:`First — what is this?`,
+    teach:`The kind of thing you're naming reshapes everything downstream. We're tuned for business naming, but the engine flexes.`,
+    render(){
+      const items=[["Business","◈","company / startup"],["Product","◐","feature / app"],["Project","◇","internal / OSS"],
+        ["Person","☻","personal / pen name"],["Place","⬡","venue / location"],["Creative work","✦","album / show"]];
+      return `<div class="cards">${items.map(([t,ic,s])=>`
+        <button class="card" data-entity="${t}" data-focus="${t==='Business'?1:0}" aria-pressed="${state.entity===t}">
+          <span class="ic">${ic}</span><span class="t">${t}</span><span class="s">${s}</span>
+          <span class="tag">our focus</span></button>`).join('')}</div>`;
+    },
+    bind(root){ root.querySelectorAll('.card').forEach(c=>c.onclick=()=>{
+      state.entity=c.dataset.entity; root.querySelectorAll('.card').forEach(x=>x.setAttribute('aria-pressed', x===c)); sync();
+    });},
+    valid:()=>!!state.entity
+  },
+  { // 1 — purpose
+    eyebrow:`Step <b>02</b> · Purpose`,
+    q:`What breaks if you don't exist?`,
+    teach:`Not a feature list — the specific thing that goes wrong in the world without you. Good purpose statements hurt; they exclude half the market on purpose.`,
+    render(){return `<textarea id="purpose" placeholder="e.g. People who quit drinking lose the evening ritual and feel like outsiders at the bar.">${state.purpose}</textarea>`;},
+    bind(root){const t=root.querySelector('#purpose'); t.oninput=()=>{state.purpose=t.value; renderBrief(); syncNext();};},
+    valid:()=>state.purpose.trim().length>8
+  },
+  { // 2 — audience
+    eyebrow:`Step <b>03</b> · Audience`,
+    q:`Who really matters here?`,
+    teach:`Be concrete. It's far easier to name for a specific person than for an abstract "everyone."`,
+    render(){return `<input class="line-in" id="aud" placeholder="e.g. ex-drinkers, 30–45, design-literate" value="${state.audience.replace(/"/g,'&quot;')}">`;},
+    bind(root){const t=root.querySelector('#aud'); t.oninput=()=>{state.audience=t.value; renderBrief(); syncNext();};},
+    valid:()=>state.audience.trim().length>2
+  },
+  { // 3 — feeling
+    eyebrow:`Step <b>04</b> · The single feeling`,
+    q:`Pick one feeling to leave them with.`,
+    teach:`One. Excitement can't coexist with calm. Picking a single dominant feeling is what keeps every later choice coherent — and it's literally what the engine scores "Resonance" against.`,
+    render(){
+      const f=[["Relief","problem gone"],["Momentum","speed, progress"],["High-Status","sophistication"],
+        ["Wonder","curiosity, awe"],["Rebellion","rule-breaking"],["Belonging","tribe, understood"],["Control","mastery, command"]];
+      return `<div class="chips">${f.map(([t,h])=>`<button class="chip" data-feel="${t}" aria-pressed="${state.feeling===t}">${t}<span class="h">${h}</span></button>`).join('')}</div>`;
+    },
+    bind(root){root.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+      state.feeling=c.dataset.feel; root.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===c)); sync();
+    });},
+    valid:()=>!!state.feeling
+  },
+  { // 4 — tonal sliders
+    eyebrow:`Step <b>05</b> · Tonal position`,
+    q:`Where do you sit?`,
+    teach:`Drag each. Watch the pathways on the right re-rank as you move — your tone literally re-weights which lenses the engine will explore.`,
+    render(){
+      const s=(id,l,r,v)=>`<div class="slider"><div class="lab"><span class="${v<45?'on':'off'}">${l}</span><span class="${v>55?'on':'off'}">${r}</span></div>
+        <input type="range" min="0" max="100" value="${v}" data-tone="${id}" style="--p:${v}%"></div>`;
+      return s('play','Playful','Serious',state.tone.play)+s('acc','Accessible','Exclusive',state.tone.acc)+s('trad','Traditional','Innovative',state.tone.trad);
+    },
+    bind(root){root.querySelectorAll('input[type=range]').forEach(r=>r.oninput=()=>{
+      state.tone[r.dataset.tone]=+r.value; r.style.setProperty('--p',r.value+'%');
+      r.closest('.slider').querySelectorAll('.lab span').forEach((sp,i)=>{
+        const v=+r.value; sp.className=i===0?(v<45?'on':'off'):(v>55?'on':'off');
+      });
+      renderLenses(); renderBrief();
+    });},
+    valid:()=>true
+  },
+  { // 5 — onlyness
+    eyebrow:`Step <b>06</b> · The onlyness statement`,
+    q:`Now the hard one.`,
+    teach:`Marty Neumeier's test. If you can complete this, you're ready to name. If you can't, no name can rescue you — and the engine will tell you so.`,
+    render(){
+      const o=state.only;
+      return `<div class="only">Our <input class="blank" id="o-offer" placeholder="offering" value="${o.offer.replace(/"/g,'&quot;')}"> is the only
+        <input class="blank" id="o-cat" placeholder="category" value="${o.cat.replace(/"/g,'&quot;')}"> that
+        <input class="blank" id="o-ben" placeholder="the only-ness" style="min-width:200px" value="${o.ben.replace(/"/g,'&quot;')}">.</div>
+        <div class="gatebadge" id="gate"><span class="dot"></span><span id="gatetext">Fill all three — this is the gate to naming.</span></div>`;
+    },
+    bind(root){
+      const map={'o-offer':'offer','o-cat':'cat','o-ben':'ben'};
+      Object.keys(map).forEach(id=>{const el=root.querySelector('#'+id); el.oninput=()=>{state.only[map[id]]=el.value; checkGate(root); renderBrief(); syncNext();};});
+      checkGate(root);
+    },
+    valid:()=>state.only.offer&&state.only.cat&&state.only.ben
+  },
+  { // 6 — complete
+    eyebrow:`Brief complete`,
+    q:``,
+    teach:``,
+    render(){
+      const o=state.only; const w=computeLenses();
+      const top=LENSES.slice().sort((a,b)=>w[b[0]]-w[a[0]]).slice(0,3).map(x=>x[1]);
+      return `<div class="done step">
+        <div class="big">Your brief is set.<br>The engine knows where to dig.</div>
+        <p class="teach" style="margin-bottom:6px">Based on a <b>${state.entity}</b> built for <b>${state.feeling}</b>, the strongest pathways to explore are:</p>
+        <div class="chips" style="margin:14px 0 4px">${top.map(t=>`<span class="chip" aria-pressed="true">${t}</span>`).join('')}</div>
+        <div class="only-final">Our <em>${o.offer||'—'}</em> is the only <em>${o.cat||'—'}</em> that <em>${o.ben||'—'}</em>.</div>
+        <div class="cta">
+          <button class="btn" onclick="alert('→ hands off to the Generation axis (next build)')">Generate names →</button>
+          <span class="note">Unlimited. We don't charge you per name.</span>
+        </div>
+      </div>`;
+    },
+    bind(){}, valid:()=>true, terminal:true
+  }
+];
+
+function checkGate(root){
+  const ready=state.only.offer&&state.only.cat&&state.only.ben;
+  const g=root.querySelector('#gate'); if(!g)return;
+  g.classList.toggle('ready',!!ready);
+  root.querySelector('#gatetext').textContent = ready ? "Onlyness locked — you're ready to name." : "Fill all three — this is the gate to naming.";
+}
+
+/* ============================================================
+   RENDER LOOP
+   ============================================================ */
+function renderStep(){
+  const s=STEPS[stepIdx]; const body=document.getElementById('body');
+  body.innerHTML=`<div class="step">
+    ${s.eyebrow?`<div class="eyebrow">${s.eyebrow}</div>`:''}
+    ${s.q?`<div class="q">${s.q}</div>`:''}
+    ${s.teach?`<div class="teach">${s.teach}</div>`:''}
+    <div>${s.render()}</div></div>`;
+  s.bind(body);
+  document.getElementById('bar').style.width=Math.round(((stepIdx+1)/STEPS.length)*100)+'%';
+  document.getElementById('back').style.visibility = stepIdx===0?'hidden':'visible';
+  const next=document.getElementById('next');
+  next.classList.toggle('hidden', !!s.terminal);
+  syncNext();
+}
+function syncNext(){
+  const s=STEPS[stepIdx]; const next=document.getElementById('next');
+  next.disabled=!s.valid();
+  next.textContent = stepIdx===STEPS.length-2 ? 'See the brief →' : 'Continue →';
+}
+function sync(){ renderLenses(); renderBrief(); syncNext();
+  // refresh focus tags / pressed states handled in bind
+}
+document.getElementById('next').onclick=()=>{ if(stepIdx<STEPS.length-1 && STEPS[stepIdx].valid()){stepIdx++; renderStep(); renderLenses(); renderBrief();} };
+document.getElementById('back').onclick=()=>{ if(stepIdx>0){stepIdx--; renderStep(); renderLenses(); renderBrief();} };
+
+/* themes */
+document.getElementById('themes').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  document.documentElement.dataset.theme=b.dataset.skin;
+  document.querySelectorAll('#themes button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+});
+
+/* boot */
+renderStep(); renderLenses(); renderBrief();
+</script>
+</body>
+</html>

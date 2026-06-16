@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Listen — Naming Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0..1,300..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--fd:"Fraunces",Georgia,serif;--fu:"Inter",system-ui,sans-serif;
+  --ink:#F4F1EA;--soft:#9b968c;--line:#ffffff20;--glass:#0b0b0dcc;--ease:cubic-bezier(.22,.61,.36,1)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#08080a}
+body{font-family:var(--fu);color:var(--ink);-webkit-font-smoothing:antialiased}
+canvas{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+.vig{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(125% 105% at 50% 48%,transparent 34%,#06060899 76%,#060608 100%)}
+.bar{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;justify-content:space-between;
+  padding:24px 30px;pointer-events:none}
+.brand{display:flex;align-items:center;gap:11px;font-weight:600;font-size:14px;letter-spacing:.02em;text-shadow:0 1px 20px #000a}
+.brand .mk{width:18px;height:18px;border:1.5px solid var(--ink);border-radius:50%;position:relative}
+.brand .mk::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--ink)}
+.brand small{color:var(--soft);font-weight:400}
+
+/* ---------- PHASE 1: LISTEN ---------- */
+.listen{position:fixed;inset:0;z-index:4;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  padding:30px;text-align:center;transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.listen.gone{opacity:0;transform:scale(1.04);pointer-events:none}
+.listen .kick{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin-bottom:20px}
+.listen h1{font-family:var(--fd);font-weight:340;font-size:clamp(30px,4.4vw,54px);line-height:1.06;letter-spacing:-.02em;max-width:16ch;margin-bottom:16px}
+.listen h1 em{font-style:italic;color:var(--ink)}
+.listen .sub{color:var(--soft);font-size:15px;max-width:42ch;line-height:1.55;margin-bottom:34px}
+.dumpwrap{width:min(680px,92vw);background:var(--glass);backdrop-filter:blur(20px);border:1px solid var(--line);
+  border-radius:20px;padding:8px;box-shadow:0 30px 90px -34px #000d}
+#dump{width:100%;min-height:142px;resize:none;background:transparent;border:0;outline:0;color:var(--ink);
+  font-family:var(--fu);font-size:16.5px;line-height:1.6;padding:18px 20px}
+#dump::placeholder{color:#ffffff3a}
+.dumprow{display:flex;justify-content:space-between;align-items:center;padding:8px 10px 10px}
+.ex{font-size:13px;color:var(--soft);background:none;border:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px;font-family:var(--fu)}
+.ex:hover{color:var(--ink)}
+.go{font-family:var(--fu);font-weight:600;font-size:14px;padding:13px 24px;border-radius:999px;border:0;cursor:pointer;
+  background:var(--ink);color:#0a0a0a;transition:.2s var(--ease)}
+.go:hover{transform:translateY(-1px)}
+.go[disabled]{opacity:.3;cursor:not-allowed;transform:none}
+
+/* listening beat */
+.thinking{position:fixed;inset:0;z-index:6;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  gap:18px;opacity:0;pointer-events:none;transition:opacity .4s}
+.thinking.on{opacity:1}
+.thinking .t{font-family:var(--fd);font-style:italic;font-size:23px;color:var(--ink);text-shadow:0 1px 30px #000}
+.dots{display:flex;gap:7px}
+.dots i{width:7px;height:7px;border-radius:50%;background:#fff;animation:bl 1.2s infinite}
+.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+@keyframes bl{0%,100%{opacity:.25}50%{opacity:1}}
+
+/* ---------- PHASE 2: REFLECT ---------- */
+.reflect{position:fixed;z-index:4;left:30px;top:50%;transform:translateY(-50%);width:392px;max-height:88vh;overflow:auto;
+  background:var(--glass);backdrop-filter:blur(22px) saturate(1.2);border:1px solid var(--line);border-radius:22px;
+  padding:28px 28px 24px;box-shadow:0 30px 80px -30px #000c;opacity:0;pointer-events:none;transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.reflect.on{opacity:1;pointer-events:auto;animation:slidein .8s var(--ease) both}
+.reflect::-webkit-scrollbar{width:0}
+@keyframes slidein{from{opacity:0;transform:translateY(-50%) translateX(-16px)}to{opacity:1;transform:translateY(-50%)}}
+.reflect .kick{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);margin-bottom:8px}
+.reflect h2{font-family:var(--fd);font-weight:360;font-size:26px;letter-spacing:-.01em;margin-bottom:4px}
+.reflect .invite{font-size:12.5px;color:var(--soft);margin-bottom:22px;line-height:1.5}
+.sent{font-family:var(--fd);font-weight:330;font-size:17px;line-height:1.75;color:var(--soft);margin-bottom:20px}
+.sent .ed{display:inline;border-bottom:1px dashed #ffffff55;color:var(--ink);cursor:text;padding:0 2px;font-family:var(--fu);font-size:15px}
+.sent .ed:focus{outline:0;border-bottom-style:solid;border-color:#fff}
+.row{margin-bottom:20px}
+.rlab{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);margin-bottom:10px;display:flex;justify-content:space-between}
+.rlab b{color:var(--ink);font-weight:500;letter-spacing:0;text-transform:none;font-size:12.5px}
+.feels{display:flex;flex-wrap:wrap;gap:6px}
+.feel{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:#ffffff08;color:var(--ink);
+  border-radius:999px;padding:7px 11px;font-size:12px;font-weight:500;cursor:pointer;transition:.18s}
+.feel .sw{width:8px;height:8px;border-radius:50%}
+.feel[aria-pressed="true"]{background:#fff;color:#0a0a0a;border-color:#fff}
+.sl{margin-bottom:13px}
+.sl .ends{display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px;color:var(--soft)}
+.sl .ends .on{color:var(--ink)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;border-radius:9px;cursor:pointer;
+  background:linear-gradient(90deg,#fff 0 var(--p,50%),#ffffff24 var(--p,50%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:#fff;box-shadow:0 2px 9px #000a}
+.only{font-family:var(--fd);font-weight:330;font-size:15px;line-height:1.8;color:var(--soft)}
+.only .b{display:inline-block;border-bottom:1px solid #ffffff55;min-width:70px;background:transparent;color:var(--ink);
+  font-family:var(--fu);font-size:12.5px;font-weight:500;padding:1px 4px}
+.only .b:focus{outline:0;border-color:#fff;background:#ffffff12}
+.only .b::placeholder{color:#ffffff40}
+.ss{margin-top:13px;font-size:11.5px;color:var(--soft);display:flex;align-items:center;gap:8px;transition:.4s}
+.ss .d{width:7px;height:7px;border-radius:50%;background:#ffffff44;transition:.4s}
+.ss.on{color:var(--ink)}.ss.on .d{background:#fff;box-shadow:0 0 0 4px #ffffff22}
+.cta{margin-top:18px;width:100%;font-weight:600;font-size:13.5px;cursor:pointer;padding:14px;border-radius:999px;
+  border:1px solid var(--ink);background:var(--ink);color:#0a0a0a;font-family:var(--fu);transition:.2s var(--ease)}
+.cta:hover{transform:translateY(-1px)}.cta[disabled]{opacity:.3;cursor:not-allowed;transform:none}
+.worldline{position:fixed;z-index:4;right:30px;bottom:30px;max-width:300px;text-align:right;pointer-events:none;
+  font-family:var(--fd);font-weight:330;font-size:16px;line-height:1.5;color:var(--ink);text-shadow:0 1px 30px #000;opacity:0;transition:.6s}
+.worldline.show{opacity:.9}
+.worldline em{font-style:normal;border-bottom:1px solid #ffffff66}
+</style>
+</head>
+<body>
+<canvas id="field"></canvas>
+<div class="vig"></div>
+<div class="bar"><div class="brand"><span class="mk"></span> Naming Engine <small>· listening</small></div></div>
+
+<!-- PHASE 1 -->
+<section class="listen" id="listen">
+  <div class="kick">Before we name anything</div>
+  <h1>Tell me what you're <em>building.</em></h1>
+  <div class="sub">Ramble. Paste your pitch, your deck, a half-formed idea. Don't make it neat — I'll find the shape inside it.</div>
+  <div class="dumpwrap">
+    <textarea id="dump" placeholder="e.g. we're making a drink for people who quit alcohol but miss the ritual of a proper aperitif in the evening…"></textarea>
+    <div class="dumprow">
+      <button class="ex" id="ex">↳ try an example</button>
+      <button class="go" id="go" disabled>Read my brief →</button>
+    </div>
+  </div>
+</section>
+
+<!-- listening beat -->
+<div class="thinking" id="thinking"><div class="t" id="tt">listening…</div><div class="dots"><i></i><i></i><i></i></div></div>
+
+<!-- PHASE 2 -->
+<aside class="reflect" id="reflect">
+  <div class="kick">Here's what I heard</div>
+  <h2 id="r-head">Let me reflect it back.</h2>
+  <div class="invite">I structured your ramble into a brief. Fix anything I got wrong — that's the work.</div>
+
+  <div class="sent">You're building <span class="ed" id="e-build" contenteditable="true">—</span>.</div>
+
+  <div class="row">
+    <div class="rlab">The feeling underneath <b id="feelv">—</b></div>
+    <div class="feels" id="feels"></div>
+  </div>
+
+  <div class="row">
+    <div class="rlab">And you sit <b id="tonev">—</b></div>
+    <div class="sl"><div class="ends"><span data-l>Playful</span><span data-r>Serious</span></div><input type="range" min="0" max="100" data-t="play"></div>
+    <div class="sl"><div class="ends"><span data-l>Accessible</span><span data-r>Exclusive</span></div><input type="range" min="0" max="100" data-t="acc"></div>
+    <div class="sl"><div class="ends"><span data-l>Traditional</span><span data-r>Innovative</span></div><input type="range" min="0" max="100" data-t="trad"></div>
+  </div>
+
+  <div class="row" style="margin-bottom:4px">
+    <div class="rlab">The one thing left — your onlyness</div>
+    <div class="only">Only <input class="b" id="o1" placeholder="you"> <input class="b" id="o2" placeholder="do / are" style="min-width:120px">.</div>
+    <div class="ss" id="ss"><span class="d"></span><span id="sst">This is yours to commit to. It's the gate.</span></div>
+  </div>
+
+  <button class="cta" id="cta" disabled>Find names in this world →</button>
+</aside>
+
+<div class="worldline" id="worldline"></div>
+
+<script>
+/* ===== palettes ===== */
+const PAL={
+  Belonging:{base:'#171109',cols:['#E8A24C','#C56A3A','#F0D9A8','#8C5A2B','#6E8A5A']},
+  Rebellion:{base:'#070707',cols:['#C6F24E','#FF3B30','#FFFFFF','#FF6A00','#2a2a2a']},
+  Wonder:{base:'#0b0916',cols:['#9B6CF2','#43E0C8','#F26DB0','#F2D06B','#6C8CF2']},
+  Control:{base:'#0d0f13',cols:['#9FB2C6','#D2DEEA','#FFFFFF','#5A6B7C','#3DA5FF']},
+  Momentum:{base:'#050e18',cols:['#1B7BE0','#3DE0FF','#FFFFFF','#7A4CF2','#0E4FA0']},
+  Relief:{base:'#0b1212',cols:['#A8E0D8','#D2ECE6','#FFFFFF','#7CB8B0','#BBD9E8']},
+  'High-Status':{base:'#0b0b08',cols:['#1A6B4E','#C9A24C','#F0E2B8','#0F3D2E','#9A7A2B']}
+};
+const FEELS=[['Relief','#A8E0D8'],['Momentum','#3DE0FF'],['High-Status','#C9A24C'],['Wonder','#9B6CF2'],
+  ['Rebellion','#C6F24E'],['Belonging','#E8A24C'],['Control','#9FB2C6']];
+const state={feeling:'Wonder',play:50,acc:50,trad:50,o1:'',o2:'',crystal:false};
+
+/* ===== heuristic "extraction" (mock strategist — real version = LLM) ===== */
+const KW={
+  Relief:['calm','rest','stress','relief','ease','quiet','peace','simple','soothe','gentle'],
+  Momentum:['fast','speed','scale','grow','accelerat','momentum','ship','launch','move','quick'],
+  'High-Status':['premium','luxury','luxe','high-end','crafted','elegant','sophisticat','refined','ceremon','proper','aperitif'],
+  Wonder:['magic','wonder','discover','curious','awe','imagine','dream','explore','delight'],
+  Rebellion:['rebel','against','disrupt','bold','break','rule','anti','defiant','revolt','opposite'],
+  Belonging:['belong','community','together','tribe','people','human','connect','ritual','share','miss','bar'],
+  Control:['control','secure','precise','master','reliab','trust','infrastructure','data','power','enterprise']
+};
+const TONE={
+  play:[['fun',-18],['play',-16],['quirky',-16],['joy',-12],['serious',18],['trust',12],['enterprise',16],['clinical',14],['proper',8]],
+  acc:[['premium',18],['luxury',20],['exclusive',18],['high-end',16],['refined',14],['ceremon',12],['craft',10],['everyone',-18],['accessible',-18],['simple',-12],['affordable',-16],['mass',-12]],
+  trad:[['new',16],['innovat',18],['disrupt',16],['future',14],['reinvent',16],['rethink',14],['heritage',-18],['classic',-16],['tradition',-16],['timeless',-12],['ritual',-12],['craft',-8]]
+};
+function extract(text){
+  const t=' '+text.toLowerCase()+' ';
+  // feeling
+  let best='Wonder',bs=-1;
+  for(const f in KW){let s=0;KW[f].forEach(k=>{if(t.includes(k))s++;});if(s>bs){bs=s;best=f;}}
+  state.feeling=bs>0?best:'Belonging';
+  // tone
+  for(const k in TONE){let v=50;TONE[k].forEach(([w,d])=>{if(t.includes(w))v+=d;});state[k]=Math.max(12,Math.min(88,v));}
+  // building line — first sentence, trimmed
+  let line=text.split(/[.\n]/)[0].trim().replace(/^(we'?re|we are|i'?m|it'?s|making|building)\s+/i,'');
+  if(line.length>90)line=line.slice(0,90).trim()+'…';
+  return line||'something worth naming';
+}
+
+/* ===== flow field (the living artifact) ===== */
+const cv=document.getElementById('field'),ctx=cv.getContext('2d');
+let W,H,DPR,particles=[],t=0,curBase='#0b0916',colsRGB=[],curCount=0;
+function resize(){DPR=Math.min(devicePixelRatio||1,2);W=cv.width=innerWidth*DPR;H=cv.height=innerHeight*DPR;}
+addEventListener('resize',resize);resize();
+const hexRgb=h=>{const n=parseInt(h.slice(1),16);return[n>>16&255,n>>8&255,n&255];};
+function applyPalette(){const p=PAL[state.feeling];curBase=p.base;colsRGB=p.cols.map(hexRgb);ctx.fillStyle=curBase;ctx.fillRect(0,0,W,H);}
+function newP(){const x=Math.random()*W,y=Math.random()*H;return{x,y,px:x,py:y,c:colsRGB[(Math.random()*colsRGB.length)|0],life:240+Math.random()*420,age:0};}
+function hash(x,y){let n=Math.sin(x*127.1+y*311.7)*43758.5453;return n-Math.floor(n);}
+function vnoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf),
+  a=hash(xi,yi),b=hash(xi+1,yi),c=hash(xi,yi+1),d=hash(xi+1,yi+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;}
+function params(){const{play,acc,trad}=state;return{
+  ns:0.00050+(trad/100)*0.00085, ts:0.0003+(trad/100)*0.0011, swirl:0.5+((100-play)/100)*0.9,
+  speed:(2.0-(acc/100)*0.95)*DPR, count:Math.round(3600-(acc/100)*1600), alpha:0.6-(acc/100)*0.2, width:(1.25+(100-acc)/100*1.1)*DPR};}
+function frame(){
+  const P=params();
+  if(Math.abs(P.count-curCount)>40){if(P.count>particles.length){for(let i=particles.length;i<P.count;i++)particles.push(newP());}else particles.length=P.count;curCount=P.count;}
+  ctx.globalCompositeOperation='source-over';ctx.fillStyle=curBase;ctx.globalAlpha=state.crystal?0.06:0.022;ctx.fillRect(0,0,W,H);
+  ctx.globalAlpha=1;ctx.globalCompositeOperation='lighter';ctx.lineCap='round';
+  const cx=W*0.5,cy=H*0.5,R=Math.min(W,H)*0.26;
+  for(const p of particles){
+    p.px=p.x;p.py=p.y;
+    let a=vnoise(p.x*P.ns,p.y*P.ns+t)*Math.PI*2*P.swirl;
+    let vx=Math.cos(a)*P.speed,vy=Math.sin(a)*P.speed;
+    if(state.crystal){const dx=p.x-cx,dy=p.y-cy,d=Math.hypot(dx,dy)||1,tx=cx+dx/d*R,ty=cy+dy/d*R;vx=vx*0.25+(tx-p.x)*0.045;vy=vy*0.25+(ty-p.y)*0.045;}
+    p.x+=vx;p.y+=vy;p.age++;
+    if(p.x<0||p.x>W||p.y<0||p.y>H||p.age>p.life){Object.assign(p,newP());continue;}
+    const[r,g,b]=p.c;ctx.strokeStyle=`rgba(${r},${g},${b},${P.alpha})`;ctx.lineWidth=P.width;
+    ctx.beginPath();ctx.moveTo(p.px,p.py);ctx.lineTo(p.x,p.y);ctx.stroke();
+  }
+  t+=P.ts;requestAnimationFrame(frame);
+}
+
+/* ===== UI / phases ===== */
+const dump=document.getElementById('dump'),go=document.getElementById('go');
+dump.oninput=()=>go.disabled=dump.value.trim().length<12;
+document.getElementById('ex').onclick=()=>{dump.value="We're making a non-alcoholic aperitif for people who quit drinking but miss the ritual of a proper drink in the evening. It's not about health or being sober-curious — it's about still feeling like you belong at the bar. Premium, a little ceremonial, design-led. The opposite of those clinical zero-proof cans.";dump.dispatchEvent(new Event('input'));dump.focus();};
+
+const feelsEl=document.getElementById('feels');
+feelsEl.innerHTML=FEELS.map(([f,c])=>`<button class="feel" data-feel="${f}"><span class="sw" style="background:${c}"></span>${f}</button>`).join('');
+function paintFeels(){[...feelsEl.children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.feel===state.feeling));document.getElementById('feelv').textContent=state.feeling;}
+feelsEl.onclick=e=>{const b=e.target.closest('.feel');if(!b)return;state.feeling=b.dataset.feel;paintFeels();applyPalette();particles=[];curCount=0;};
+
+function toneWord(){const s=v=>v<42?0:v>58?2:1;
+  const a=['playful','balanced','serious'][s(state.play)],b=['accessible','mid','exclusive'][s(state.acc)],c=['traditional','mid','innovative'][s(state.trad)];
+  return `${a} · ${b} · ${c}`;}
+function syncTone(){document.querySelectorAll('.reflect input[type=range]').forEach(r=>{r.value=state[r.dataset.t];r.style.setProperty('--p',state[r.dataset.t]+'%');
+  const e=r.parentElement.querySelectorAll('.ends span');e[0].classList.toggle('on',state[r.dataset.t]<50);e[1].classList.toggle('on',state[r.dataset.t]>50);});
+  document.getElementById('tonev').textContent=toneWord();}
+document.querySelectorAll('.reflect input[type=range]').forEach(r=>r.oninput=()=>{state[r.dataset.t]=+r.value;syncTone();});
+
+const ss=document.getElementById('ss'),wl=document.getElementById('worldline'),cta=document.getElementById('cta');
+function syncOnly(){const done=state.o1&&state.o2;state.crystal=!!done;
+  ss.classList.toggle('on',done);document.getElementById('sst').textContent=done?"Onlyness committed — your world has a shape.":"This is yours to commit to. It's the gate.";
+  cta.disabled=!done;wl.classList.toggle('show',done);wl.innerHTML=done?`Only <em>${state.o1}</em> <em>${state.o2}</em>.`:'';}
+document.getElementById('o1').oninput=e=>{state.o1=e.target.value.trim();syncOnly();};
+document.getElementById('o2').oninput=e=>{state.o2=e.target.value.trim();syncOnly();};
+cta.onclick=()=>{document.querySelector('.brand small').textContent='· carrying this world forward';cta.textContent='→ Generation axis (next build)';};
+
+go.onclick=()=>{
+  const build=extract(dump.value);
+  // phase out listen
+  document.getElementById('listen').classList.add('gone');
+  const think=document.getElementById('thinking');think.classList.add('on');
+  const beats=['listening…','finding the shape…','reading the feeling…'];let i=0;
+  const iv=setInterval(()=>{i++;if(i<beats.length)document.getElementById('tt').textContent=beats[i];},620);
+  setTimeout(()=>{
+    clearInterval(iv);think.classList.remove('on');
+    // apply extracted brief to the living artifact
+    applyPalette();particles=[];curCount=0;
+    document.getElementById('e-build').textContent=build;
+    paintFeels();syncTone();
+    document.getElementById('reflect').classList.add('on');
+  },2000);
+};
+
+/* boot — ambient neutral field while listening */
+applyPalette();for(let i=0;i<1400;i++)particles.push(newP());curCount=1400;frame();
+</script>
+</body>
+</html>

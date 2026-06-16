@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Brand Seed — Naming Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font-display:"Fraunces",Georgia,serif; --font-ui:"Inter",system-ui,sans-serif;
+  --ink:#F4F1EA; --ink-soft:#9b968c; --line:#ffffff1f; --glass:#0c0c0ecc;
+  --accent:#fff; --r:14px; --ease:cubic-bezier(.22,.61,.36,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#08080a}
+body{font-family:var(--font-ui);color:var(--ink);-webkit-font-smoothing:antialiased}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
+.vig{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(120% 100% at 62% 50%, transparent 38%, #06060899 78%, #060608 100%)}
+
+/* top bar */
+.bar{position:fixed;top:0;left:0;right:0;z-index:3;display:flex;justify-content:space-between;align-items:center;
+  padding:24px 30px;pointer-events:none}
+.brand{display:flex;align-items:center;gap:11px;font-weight:600;font-size:14px;letter-spacing:.02em;
+  text-shadow:0 1px 20px #000a;pointer-events:auto}
+.brand .mk{width:18px;height:18px;border:1.5px solid var(--ink);border-radius:50%;position:relative}
+.brand .mk::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--ink)}
+.brand small{color:var(--ink-soft);font-weight:400}
+.hint{font-size:12px;color:var(--ink-soft);letter-spacing:.02em;pointer-events:auto;text-shadow:0 1px 16px #000a}
+
+/* control rail */
+.rail{position:fixed;z-index:2;left:30px;top:50%;transform:translateY(-50%);width:344px;max-height:84vh;overflow:auto;
+  background:var(--glass);backdrop-filter:blur(22px) saturate(1.2);-webkit-backdrop-filter:blur(22px) saturate(1.2);
+  border:1px solid var(--line);border-radius:22px;padding:26px 26px 24px;
+  box-shadow:0 30px 80px -30px #000c;animation:in .8s var(--ease) both}
+@keyframes in{from{opacity:0;transform:translateY(-50%) translateX(-14px)}to{opacity:1;transform:translateY(-50%)}}
+.rail::-webkit-scrollbar{width:0}
+.kick{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:9px}
+.title{font-family:var(--font-display);font-weight:360;font-size:25px;line-height:1.12;letter-spacing:-.01em;margin-bottom:5px}
+.lead{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin-bottom:22px}
+.grp{margin-bottom:22px}
+.glab{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:11px;display:flex;justify-content:space-between}
+.glab b{color:var(--ink);font-weight:500;letter-spacing:0;text-transform:none;font-size:12px}
+
+/* feeling swatches */
+.feels{display:flex;flex-wrap:wrap;gap:7px}
+.feel{position:relative;border:1px solid var(--line);background:#ffffff0a;color:var(--ink);border-radius:999px;
+  padding:8px 13px;font-size:12.5px;font-weight:500;cursor:pointer;transition:.2s var(--ease);display:flex;align-items:center;gap:7px}
+.feel .sw{width:9px;height:9px;border-radius:50%}
+.feel:hover{border-color:#ffffff44}
+.feel[aria-pressed="true"]{background:#fff;color:#0a0a0a;border-color:#fff}
+
+/* sliders */
+.sl{margin-bottom:16px}
+.sl .ends{display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:7px;color:var(--ink-soft)}
+.sl .ends .on{color:var(--ink)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;border-radius:9px;cursor:pointer;
+  background:linear-gradient(90deg,#fff 0 var(--p,50%),#ffffff24 var(--p,50%) 100%)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:#fff;box-shadow:0 2px 10px #000a;cursor:grab}
+
+/* onlyness */
+.only{font-family:var(--font-display);font-weight:340;font-size:15.5px;line-height:1.85;color:var(--ink-soft)}
+.only .b{display:inline-block;border-bottom:1px solid #ffffff55;min-width:78px;background:transparent;color:var(--ink);
+  font-family:var(--font-ui);font-size:13px;font-weight:500;padding:1px 4px}
+.only .b:focus{outline:0;border-color:#fff;background:#ffffff12}
+.only .b::placeholder{color:#ffffff40}
+.seedstate{margin-top:16px;font-size:11.5px;color:var(--ink-soft);display:flex;align-items:center;gap:8px;transition:.4s}
+.seedstate .d{width:7px;height:7px;border-radius:50%;background:#ffffff44;transition:.4s}
+.seedstate.on{color:var(--ink)}
+.seedstate.on .d{background:#fff;box-shadow:0 0 0 4px #ffffff22}
+
+.cta{margin-top:20px;width:100%;font-family:var(--font-ui);font-weight:600;font-size:13.5px;cursor:pointer;
+  padding:14px;border-radius:999px;border:1px solid var(--ink);background:var(--ink);color:#0a0a0a;transition:.2s var(--ease)}
+.cta:hover{transform:translateY(-1px)}
+.cta[disabled]{opacity:.3;cursor:not-allowed;transform:none}
+
+/* right readout */
+.read{position:fixed;z-index:2;right:30px;bottom:30px;text-align:right;max-width:300px;pointer-events:none}
+.read .ol{font-family:var(--font-display);font-weight:340;font-size:16px;line-height:1.5;color:var(--ink);
+  text-shadow:0 1px 30px #000;opacity:0;transition:.6s}
+.read .ol.show{opacity:.92}
+.read .ol em{font-style:normal;border-bottom:1px solid #ffffff66}
+.read .lbl{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px;
+  text-shadow:0 1px 16px #000}
+</style>
+</head>
+<body>
+<canvas id="field"></canvas>
+<div class="vig"></div>
+
+<div class="bar">
+  <div class="brand"><span class="mk"></span> Naming Engine <small>· brand seed</small></div>
+  <div class="hint" id="hint">Shape the seed. It's your brief, made visible.</div>
+</div>
+
+<div class="rail">
+  <div class="kick">Orientation</div>
+  <div class="title">Grow your brand seed.</div>
+  <div class="lead">Every choice reshapes the living form. By the end you'll have a brief — and the first visual of the world your name will live in.</div>
+
+  <div class="grp">
+    <div class="glab">The single feeling <b id="feelv">—</b></div>
+    <div class="feels" id="feels"></div>
+  </div>
+
+  <div class="grp">
+    <div class="glab">Tonal position</div>
+    <div class="sl"><div class="ends"><span data-l>Playful</span><span data-r>Serious</span></div><input type="range" min="0" max="100" value="50" data-t="play" style="--p:50%"></div>
+    <div class="sl"><div class="ends"><span data-l>Accessible</span><span data-r>Exclusive</span></div><input type="range" min="0" max="100" value="50" data-t="acc" style="--p:50%"></div>
+    <div class="sl"><div class="ends"><span data-l>Traditional</span><span data-r>Innovative</span></div><input type="range" min="0" max="100" value="50" data-t="trad" style="--p:50%"></div>
+  </div>
+
+  <div class="grp" style="margin-bottom:6px">
+    <div class="glab">The onlyness</div>
+    <div class="only">Our <input class="b" id="o1" placeholder="offering"> is the only <input class="b" id="o2" placeholder="category"> that <input class="b" id="o3" placeholder="only-ness" style="min-width:120px">.</div>
+    <div class="seedstate" id="ss"><span class="d"></span><span id="sst">Complete this and the seed crystallizes.</span></div>
+  </div>
+
+  <button class="cta" id="cta" disabled>Find names in this world →</button>
+</div>
+
+<div class="read">
+  <div class="lbl" id="rlbl">Reading the seed</div>
+  <div class="ol" id="rol"></div>
+</div>
+
+<script>
+/* ---------- palettes (the real theming layer — data-driven) ---------- */
+const PAL = {
+  Belonging :{base:'#171109', cols:['#E8A24C','#C56A3A','#F0D9A8','#8C5A2B','#6E8A5A']},
+  Rebellion :{base:'#070707', cols:['#C6F24E','#FF3B30','#FFFFFF','#FF6A00','#2a2a2a']},
+  Wonder    :{base:'#0b0916', cols:['#9B6CF2','#43E0C8','#F26DB0','#F2D06B','#6C8CF2']},
+  Control   :{base:'#0d0f13', cols:['#9FB2C6','#D2DEEA','#FFFFFF','#5A6B7C','#3DA5FF']},
+  Momentum  :{base:'#050e18', cols:['#1B7BE0','#3DE0FF','#FFFFFF','#7A4CF2','#0E4FA0']},
+  Relief    :{base:'#0b1212', cols:['#A8E0D8','#D2ECE6','#FFFFFF','#7CB8B0','#BBD9E8']},
+  'High-Status':{base:'#0b0b08', cols:['#1A6B4E','#C9A24C','#F0E2B8','#0F3D2E','#9A7A2B']}
+};
+const FEELS=[['Relief','#A8E0D8'],['Momentum','#3DE0FF'],['High-Status','#C9A24C'],['Wonder','#9B6CF2'],
+  ['Rebellion','#C6F24E'],['Belonging','#E8A24C'],['Control','#9FB2C6']];
+
+const state={feeling:'Wonder', play:50, acc:50, trad:50, only:{a:'',b:'',c:''}, crystal:false};
+
+/* ---------- value noise ---------- */
+function hash(x,y){let n=Math.sin(x*127.1+y*311.7)*43758.5453;return n-Math.floor(n);}
+function vnoise(x,y){
+  const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi;
+  const u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+  const a=hash(xi,yi),b=hash(xi+1,yi),c=hash(xi,yi+1),d=hash(xi+1,yi+1);
+  return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;
+}
+
+/* ---------- particle field ---------- */
+const cv=document.getElementById('field'),ctx=cv.getContext('2d');
+let W,H,DPR,particles=[],t=0,curBase='#0b0916',colsRGB=[];
+function resize(){DPR=Math.min(devicePixelRatio||1,2);W=cv.width=innerWidth*DPR;H=cv.height=innerHeight*DPR;
+  ctx.scale(1,1);}
+addEventListener('resize',resize);resize();
+
+function hexToRgb(h){const n=parseInt(h.slice(1),16);return[n>>16&255,n>>8&255,n&255];}
+function applyPalette(){const p=PAL[state.feeling];curBase=p.base;colsRGB=p.cols.map(hexToRgb);
+  // hard repaint base so trails recolor
+  ctx.fillStyle=curBase;ctx.fillRect(0,0,W,H);}
+function spawn(n){particles=[];for(let i=0;i<n;i++)particles.push(newP());}
+function newP(){const x=Math.random()*W,y=Math.random()*H;return{x,y,px:x,py:y,
+  c:colsRGB[(Math.random()*colsRGB.length)|0],life:240+Math.random()*420,age:0};}
+
+function params(){
+  const {play,acc,trad}=state;
+  return{
+    ns: 0.00050 + (trad/100)*0.00085,        // innovative = busier; low freq = smooth streams
+    ts: 0.0003 + (trad/100)*0.0011,          // innovative = faster evolution
+    swirl: 0.5 + ((100-play)/100)*0.9,       // playful = more swirl, serious = laminar streams
+    speed: (2.0 - (acc/100)*0.95)*DPR,       // exclusive = slower
+    count: Math.round(3800 - (acc/100)*1700),// exclusive = fewer, airier
+    alpha: 0.6 - (acc/100)*0.2,              // exclusive = quieter
+    width:(1.25 + (100-acc)/100*1.1)*DPR
+  };
+}
+let curCount=0;
+function frame(){
+  const P=params();
+  if(Math.abs(P.count-curCount)>40){adjust(P.count);curCount=P.count;}
+  // trail fade
+  ctx.globalCompositeOperation='source-over';
+  ctx.fillStyle=curBase; ctx.globalAlpha=state.crystal?0.06:0.022; ctx.fillRect(0,0,W,H);
+  ctx.globalAlpha=1; ctx.globalCompositeOperation='lighter'; ctx.lineCap='round';
+  const cx=W*0.5,cy=H*0.5, R=Math.min(W,H)*0.26;
+  for(const pt of particles){
+    pt.px=pt.x;pt.py=pt.y;
+    let a=vnoise(pt.x*P.ns, pt.y*P.ns + t)*Math.PI*2*P.swirl;
+    let vx=Math.cos(a)*P.speed, vy=Math.sin(a)*P.speed;
+    if(state.crystal){
+      // pull toward a ring → resolves into a coherent seed/halo
+      const dx=pt.x-cx,dy=pt.y-cy,d=Math.hypot(dx,dy)||1;
+      const tx=cx+dx/d*R, ty=cy+dy/d*R;
+      vx=vx*0.25+(tx-pt.x)*0.045; vy=vy*0.25+(ty-pt.y)*0.045;
+    }
+    pt.x+=vx;pt.y+=vy;pt.age++;
+    if(pt.x<0||pt.x>W||pt.y<0||pt.y>H||pt.age>pt.life){Object.assign(pt,newP());continue;}
+    const[r,g,b]=pt.c;
+    ctx.strokeStyle=`rgba(${r},${g},${b},${P.alpha})`;
+    ctx.lineWidth=P.width;
+    ctx.beginPath();ctx.moveTo(pt.px,pt.py);ctx.lineTo(pt.x,pt.y);ctx.stroke();
+  }
+  t+=P.ts;
+  requestAnimationFrame(frame);
+}
+function adjust(n){if(n>particles.length){for(let i=particles.length;i<n;i++)particles.push(newP());}
+  else particles.length=n;}
+
+/* ---------- UI ---------- */
+const feelsEl=document.getElementById('feels');
+feelsEl.innerHTML=FEELS.map(([f,c])=>`<button class="feel" data-feel="${f}" aria-pressed="${state.feeling===f}">
+  <span class="sw" style="background:${c}"></span>${f}</button>`).join('');
+feelsEl.addEventListener('click',e=>{const b=e.target.closest('.feel');if(!b)return;
+  state.feeling=b.dataset.feel;[...feelsEl.children].forEach(x=>x.setAttribute('aria-pressed',x===b));
+  document.getElementById('feelv').textContent=state.feeling;
+  applyPalette();spawn(curCount||1000);});
+
+document.querySelectorAll('input[type=range]').forEach(r=>r.oninput=()=>{
+  state[r.dataset.t]=+r.value;r.style.setProperty('--p',r.value+'%');
+  const ends=r.parentElement.querySelectorAll('.ends span');const v=+r.value;
+  ends[0].classList.toggle('on',v<50);ends[1].classList.toggle('on',v>50);
+});
+
+const ol=document.getElementById('rol');
+function syncOnly(){
+  const o=state.only;const done=o.a&&o.b&&o.c;
+  state.crystal=!!done;
+  document.getElementById('ss').classList.toggle('on',done);
+  document.getElementById('sst').textContent=done?'Seed crystallized — your world has a shape.':'Complete this and the seed crystallizes.';
+  document.getElementById('cta').disabled=!done;
+  document.getElementById('rlbl').textContent=done?'Your world':'Reading the seed';
+  ol.classList.toggle('show',done);
+  ol.innerHTML=done?`Our <em>${o.a}</em> is the only <em>${o.b}</em> that <em>${o.c}</em>.`:'';
+}
+[['o1','a'],['o2','b'],['o3','c']].forEach(([id,k])=>{
+  document.getElementById(id).oninput=e=>{state.only[k]=e.target.value.trim();syncOnly();};
+});
+document.getElementById('cta').onclick=()=>{
+  document.getElementById('hint').textContent='→ carrying this world into the Generation axis (next build)';
+};
+
+/* boot */
+document.getElementById('feelv').textContent=state.feeling;
+applyPalette();spawn(2600);curCount=2600;frame();
+</script>
+</body>
+</html>
